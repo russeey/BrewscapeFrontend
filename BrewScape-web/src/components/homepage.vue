@@ -25,7 +25,6 @@
 
     <!-- Promo Section -->
     <section class="promo">
-      <div class="promo-content">
         <div class="promotion-image">
           <img src="@/assets/promotion.png" alt="promotion" class="promotion" />
         </div>
@@ -37,7 +36,6 @@
           </p>
           <button @click="joinFun">Join the fun</button>
         </div>
-      </div>
     </section>
 
     <!-- Explore Coffee Shop Section -->
@@ -90,7 +88,7 @@ export default {
 <style scoped>
 * {
   margin: 0;
-  padding: 0%;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -114,7 +112,7 @@ header {
 }
 
 main {
-  max-width: 1200px;
+  max-width: 2000px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -195,31 +193,40 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 50px;
   background-color: #deb887;
   height: auto;
-  min-height: 60vh;
+  min-height: 70vh;
   color: #4b2d1f;
 }
 
-.promo-content {
+/* .promo-content {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
   width: 100%;
-  gap: 20px;
+  position: relative;
+} */
+
+.promotion-image{
+  width: 100%;
+  height: 70vh;
+  background-color: black;
 }
 
 .promotion-image img {
-  width: 350px; /* Adjust the image size */
-  height: auto;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .promo-text {
   color: #4b2d1f;
+  width: 100%;
+  height: 70vh;
+  padding: 40px;
+  background-color: white;
   text-align: left;
-  max-width: 45%;
   display: flex;
   flex-direction: column;
   justify-content: center; /* Make sure text is vertically centered */
@@ -323,18 +330,21 @@ main {
 .explore-content {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* Center the items horizontally */
   flex-wrap: wrap;
+  text-align: center; /* Center the text inside divs */
 }
 
 .explore-content img {
-  width: 200px;
+  width: 300px;
   margin-bottom: 20px;
+  padding: 20px;
 }
 
 .explore-content div {
-  text-align: left;
+  text-align: center; /* Center the text inside each div */
 }
+
 
 .explore-content h2 {
   font-size: 2rem;

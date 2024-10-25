@@ -1,0 +1,82 @@
+
+header {
+    background-color: #f8e2c2;
+    padding: 20px;
+    color: #4b2d1f;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+  }
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 40px;
+    background-color: #f5e6d1;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    height: 50px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .logo-section {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Reduced gap between logo and text */
+  }
+  
+  .logo-section .logo {
+    width: 30px; /* Reduced logo size */
+    height: auto;
+  }
+  
+  .logo-section span {
+    font-size: 1.2rem; /* Reduced font size for compact design */
+    font-weight: bold;
+    color: #4b2d1f;
+  }
+  
+  .nav-links-left {
+    display: flex;
+    list-style: none;
+    gap: 15px; /* Reduced gap between links */
+  }
+  
+  .nav-links-left li a {
+    text-decoration: none;
+    font-size: 0.9rem; /* Reduced font size for links */
+    color: #4b2d1f;
+    transition: color 0.3s ease;
+  }
+  
+  .nav-links-left li a:hover {
+    color: #d5a874;
+  }
+  
+  .nav {
+    display: flex;
+    list-style: none;
+    gap: 15px; /* Reduced gap between right-side buttons */
+  }
+  
+  .nav .button {
+    padding: 10px 15px; /* Reduced button padding for compact design */
+    background-color: #8a5e4a;
+    color: #fff;
+    border-radius: 10px; /* Smaller border-radius */
+    text-decoration: none;
+    font-size: 0.9rem; /* Reduced font size */
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .nav .button:hover {
+    background-color: #2f1a0f;
+  }
+  
