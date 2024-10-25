@@ -2,11 +2,15 @@
   <div v-if="isAuthenticated" class="dashboard">
     <header class="header">
       <div class="logo">
-        <!-- <img src="path-to-your-logo" alt="BrewScape Logo"> -->
         <h1>BrewScape</h1>
       </div>
       <div class="search-bar">
-        <input type="text" placeholder="Search...">
+        <input 
+          type="text" 
+          placeholder="Search..." 
+          v-model="searchTerm" 
+          @input="filterMenu" 
+        />
       </div>
       <button class="deal-button">Weekly Deal For You</button>
       <button class="logout-button" @click="logout()">Logout</button>
@@ -23,7 +27,7 @@
       </div>
     </section>
 
-    <!-- Promo Section 2 (additional) -->
+    <!-- Promo Section 2 -->
     <section class="promo second-promo">
       <div class="promo-content">
         <h2>{{ secondPromoMessage }}</h2>
@@ -39,7 +43,11 @@
       <div class="menu">
         <h2>COFFEE & Etc.</h2>
         <ul>
-          <li v-for="item in coffeeMenu" :key="item.name">
+          <li 
+            v-for="item in filteredCoffeeMenu" 
+            :key="item.name" 
+            :class="{ highlighted: isHighlighted(item.name) }"
+          >
             {{ item.name }} - {{ item.price }}₱
           </li>
         </ul>
@@ -47,7 +55,11 @@
       <div class="menu">
         <h2>PASTRIES & Etc.</h2>
         <ul>
-          <li v-for="item in pastriesMenu" :key="item.name">
+          <li 
+            v-for="item in filteredPastriesMenu" 
+            :key="item.name" 
+            :class="{ highlighted: isHighlighted(item.name) }"
+          >
             {{ item.name }} - {{ item.price }}₱
           </li>
         </ul>
@@ -80,17 +92,18 @@
   </div>
   <div v-else>
     <h1>You are not authorized to view this page.</h1>
-    <router-link to="/login">Go to Login</router-link>
+    <router-link to="/log in">Go to Login</router-link>
   </div>
 </template>
 
 <script>
-import authService from "@/authService"; // Import the auth service
+import authService from "@/authService";
 
 export default {
   data() {
     return {
       isAuthenticated: false,
+      searchTerm: '',
       coffeeMenu: [
         { name: 'Iced Cappuccino', price: 120 },
         { name: 'Salted Caramel Cold Brew', price: 120 },
@@ -108,44 +121,65 @@ export default {
       promoMessage: "Relax with a refreshing delivery deal",
       secondPromoMessage: "Exciting seasonal drinks are here!",
       discount: "5% off Coffee orders of P1000+",
-      currentRating: 0, // To store the selected rating
-      hoverRating: 0 // To handle hover effect over stars
+      currentRating: 0,
+      hoverRating: 0
     };
   },
   created() {
-    // Check authentication status on component creation
     this.isAuthenticated = authService.isAuthenticated;
 
-    // Optional: Redirect to login if not authenticated
     if (!this.isAuthenticated) {
       this.$router.push("/login");
     }
   },
+  computed: {
+    filteredCoffeeMenu() {
+      return this.coffeeMenu.filter(item => 
+        item.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    },
+    filteredPastriesMenu() {
+      return this.pastriesMenu.filter(item => 
+        item.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    }
+  },
   methods: {
     setRating(rating) {
-      this.currentRating = rating; // Set the current rating based on user click
+      this.currentRating = rating;
     },
     logout() {
-      // authService.clearAuth(); // Use the clearAuth method 
-      localStorage.removeItem("loggedInUserId"); // Clear user data from localStorage
-      this.$router.push("/login"); // Redirect to login page
+      localStorage.removeItem("loggedInUserId");
+      this.$router.push("/login");
     },
+    isHighlighted(itemName) {
+      return itemName.toLowerCase().includes(this.searchTerm.toLowerCase());
+    }
   }
 }
 </script>
 
 <style scoped>
-/* Basic Styles */
+/* General Layout */
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: 'Roboto', sans-serif;
+  background-color: #f7f7f7;
+  color: #333;
   margin: 0;
   padding: 0;
-  background-color: #f9f4eb;
 }
 
+/* Highlighted Item */
+.highlighted {
+  background-color: #ffeb3b; /* Highlight color for matched items */
+}
+
+/* Dashboard Wrapper */
 .dashboard {
-  padding: 20px;
-  background-color: #fff8f0;
+  padding: 40px;
+  background-color: #f8e2c2; /* Card-style dashboard */
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
 }
 
 /* Header */
@@ -153,9 +187,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  background-color: #dcb08b;
-  border-bottom: 2px solid #c98c58;
+  background-color: #f4f4f4; /* Lighter header background */
+  padding: 20px 30px;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .logo {
@@ -163,75 +197,59 @@ body {
   align-items: center;
 }
 
-.logo img {
-  width: 40px;
-  margin-right: 10px;
-}
-
 .logo h1 {
-  font-size: 24px;
-  color: #4b2c20;
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50; /* Darker text for logo */
+  margin-left: 10px;
 }
 
-.search-bar input {
-  padding: 5px;
+/* Buttons */
+button {
   font-size: 16px;
-  border: 1px solid #c98c58;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .deal-button {
-  background-color: #8b4513;
-  color: #fff;
-  padding: 10px 15px;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
+  background-color: #4b2d1f; /* Figma's accent color */
+  color: white;
 }
 
-/* Logout Button */
 .logout-button {
-  background-color: #d9534f; /* Red color for logout */
-  color: #fff;
-  padding: 10px 15px;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  margin-left: 20px; /* Add some space from the deal button */
+  background-color: #4b2d1f; /* Logout button color */
+  color: white;
 }
 
 /* Promo Section */
 .promo {
   display: flex;
   justify-content: space-between;
-  margin-top: 30px;
-  padding: 20px;
-  background-color: #f0e4d0;
+  align-items: center;
+  margin-top: 40px;
+  padding: 30px;
+  background-color: #f9f9f9;
   border-radius: 10px;
-}
-
-.promo-content {
-  flex: 1;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .promo-content h2 {
   font-size: 24px;
-  color: #6b3d1f;
+  font-weight: 600;
+  color: #333;
 }
 
 .promo-content p {
-  font-size: 16px;
-  color: #4b2c20;
+  font-size: 18px;
+  color: #777;
 }
 
 .promo-image img {
-  width: 150px;
-  height: auto;
-  border-radius: 10px;
-}
-
-/* Additional Promo Section */
-.second-promo {
-  margin-top: 20px;
+  width: 180px; /* Image size */
+  border-radius: 10px; /* Rounded corners for promo images */
 }
 
 /* Menu Section */
@@ -247,46 +265,48 @@ body {
 }
 
 .menu h2 {
-  font-size: 20px;
-  color: #8b4513;
-  margin-bottom: 15px;
+  font-size: 22px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
 .menu ul {
-  list-style-type: none;
+  list-style: none;
   padding: 0;
 }
 
 .menu ul li {
-  background-color: #fff;
-  padding: 10px;
-  margin: 5px 0;
-  font-size: 16px;
-  border-radius: 5px;
-  border: 1px solid #dcb08b;
+  padding: 15px;
+  background-color: #fafafa;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  font-size: 18px;
+  color: #444;
 }
 
-/* Footer */
+/* Footer and Ratings */
 .footer {
-  margin-top: 50px;
-  padding: 15px;
-  background-color: #dcb08b;
+  margin-top: 60px;
+  padding: 30px;
+  background-color: #f0f0f0;
   text-align: center;
-  color: #4b2c20;
+  border-top: 1px solid #ddd;
 }
 
 .footer p {
-  margin: 5px 0;
-  font-size: 16px;
+  font-size: 18px;
+  color: #555;
 }
 
 .star {
   cursor: pointer;
-  font-size: 24px;
-  color: #ccc;
+  font-size: 26px;
+  color: #ddd;
 }
 
 .star.filled {
-  color: #f5a623;
+  color: #fbc02d; /* Golden filled stars */
 }
 </style>

@@ -57,12 +57,12 @@ export default {
     return {
       email: "",
       password: "",
-      errorMessage: "", // Error handling
-      loading: false, // Loading state
-      keepSignedIn: false, // Keep me signed in checkbox
-      failedAttempts: 0, // Track failed login attempts
-      maxAttempts: 3, // Maximum allowed attempts
-      timeoutMinutes: 5, // Timeout period in minutes
+      errorMessage: "",
+      loading: false,
+      keepSignedIn: false, 
+      failedAttempts: 0, 
+      maxAttempts: 3, 
+      timeoutMinutes: 5,
     };
   },
   methods: {
@@ -122,17 +122,16 @@ export default {
       this.failedAttempts += 1;
       localStorage.setItem("failedAttempts", this.failedAttempts);
 
-      // Check if max attempts exceeded
       if (this.failedAttempts >= this.maxAttempts) {
-        const timeoutEndTimestamp = new Date().getTime() + 30 * 1000; // Timeout for 30 seconds
+        const timeoutEndTimestamp = new Date().getTime() + 30 * 1000;
         localStorage.setItem("timeoutEndTimestamp", timeoutEndTimestamp);
         this.errorMessage = `Too many failed attempts. Please wait 30 seconds before trying again.`;
       }
     },
-    loginAsAdmin() {
-      this.email = "admin@example.com";
-      this.password = "adminpassword"; // Set default admin credentials
-    },
+    // loginAsAdmin() {
+    //   this.email = "admin@example.com";
+    //   this.password = "adminpassword";
+    // },
   },
   created() {
     // Initialize failed attempts from localStorage

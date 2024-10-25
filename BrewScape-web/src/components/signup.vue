@@ -108,7 +108,7 @@ export default {
         );
         const user = userCredential.user;
         console.log("User signed up:", user);
-        this.$router.push("/"); // Redirect to home page after signup
+        this.$router.push("/dashboard"); // Redirect to home page after signup
       } catch (error) {
         console.error("Error during signup:", error);
         if (error.code === "auth/email-already-in-use") {
