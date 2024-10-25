@@ -1,4 +1,4 @@
-
+<!-- 
 <template>
         <header>
       <div class="navbar">
@@ -30,4 +30,4 @@ export default {
 };
 </script>
 
-<style src="/BrewScape-web/src/styles/navbar.css"/style>
+<style src="/BrewScape-web/src/styles/navbar.css"/style> -->

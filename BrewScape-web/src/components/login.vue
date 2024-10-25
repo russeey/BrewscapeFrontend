@@ -14,9 +14,6 @@
     </header>
     <div class="form-container">
       <h2>Sign in or Create an account</h2>
-      <!-- <div class="logo">
-        <img :src="logo" alt="coffee logo" width="150" />
-      </div> -->
       <form @submit.prevent="loginUser">
         <input
           type="email"
@@ -31,7 +28,7 @@
           required
         />
         <div class="check-box-div">
-            <div class="checkbox-container">
+          <div class="checkbox-container">
             <input type="checkbox" id="keep-signed-in" class="checkbox" v-model="keepSignedIn" />
             <label for="keep-signed-in">Keep me signed in</label>
           </div>
@@ -53,6 +50,7 @@
 <script>
 import { auth } from "@/firebase.config"; // Import Firebase auth
 import { signInWithEmailAndPassword } from "firebase/auth";
+import authService from "@/authService"; // Import the auth service
 
 export default {
   data() {
@@ -62,20 +60,35 @@ export default {
       errorMessage: "", // Error handling
       loading: false, // Loading state
       keepSignedIn: false, // Keep me signed in checkbox
-      logo: "14aed144-08e8-4eed-90ce-8b8fb7daa5ec.jpg", // Logo source
+      failedAttempts: 0, // Track failed login attempts
+      maxAttempts: 3, // Maximum allowed attempts
+      timeoutMinutes: 5, // Timeout period in minutes
     };
   },
   methods: {
     async loginUser() {
+      const currentTimestamp = new Date().getTime();
+      const timeoutEndTimestamp = localStorage.getItem("timeoutEndTimestamp");
+
+      // Check if timeout period is active
+      if (timeoutEndTimestamp && currentTimestamp < timeoutEndTimestamp) {
+        const remainingTime = Math.ceil((timeoutEndTimestamp - currentTimestamp) / 60000);
+        this.errorMessage = `Too many failed attempts. Please wait ${remainingTime} minutes.`;
+        return;
+      }
+
       this.loading = true; // Show loading state
       try {
-        // Firebase sign-in method
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          this.email,
-          this.password
-        );
+        const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
         const user = userCredential.user;
+
+        // Set authentication status in authService
+        authService.isAuthenticated = true;
+
+        // Reset failed attempts on successful login
+        this.failedAttempts = 0;
+        localStorage.removeItem("failedAttempts");
+        localStorage.removeItem("timeoutEndTimestamp");
 
         // Save user to localStorage if 'Keep me signed in' is checked
         if (this.keepSignedIn) {
@@ -83,26 +96,37 @@ export default {
           localStorage.setItem("email", this.email);
         }
 
-        // Check if user is admin
-        const isAdmin = this.email.includes("admin");
-        if (isAdmin) {
-          this.$router.push("/adminDashboard"); // Redirect admin
-        } else {
-          this.$router.push("/"); // Redirect regular user
-        }
+        // Redirect all users to the dashboard
+        this.$router.push("/dashboard");
+
       } catch (error) {
         console.error("Login error:", error);
-        if (error.code === "auth/invalid-email") {
-          this.errorMessage = "Invalid email format.";
-        } else if (error.code === "auth/user-not-found") {
-          this.errorMessage = "No user found with this email.";
-        } else if (error.code === "auth/wrong-password") {
-          this.errorMessage = "Incorrect password. Please try again.";
-        } else {
-          this.errorMessage = "Login failed. Please try again.";
-        }
+        this.handleLoginError(error);
       } finally {
         this.loading = false; // Stop loading state
+      }
+    },
+    handleLoginError(error) {
+      // Customize error messages
+      if (error.code === "auth/invalid-email") {
+        this.errorMessage = "Invalid email format.";
+      } else if (error.code === "auth/user-not-found") {
+        this.errorMessage = "No user found with this email.";
+      } else if (error.code === "auth/wrong-password") {
+        this.errorMessage = "Incorrect password. Please try again.";
+      } else {
+        this.errorMessage = "Login failed. Please try again.";
+      }
+
+      // Increment failed attempts
+      this.failedAttempts += 1;
+      localStorage.setItem("failedAttempts", this.failedAttempts);
+
+      // Check if max attempts exceeded
+      if (this.failedAttempts >= this.maxAttempts) {
+        const timeoutEndTimestamp = new Date().getTime() + 30 * 1000; // Timeout for 30 seconds
+        localStorage.setItem("timeoutEndTimestamp", timeoutEndTimestamp);
+        this.errorMessage = `Too many failed attempts. Please wait 30 seconds before trying again.`;
       }
     },
     loginAsAdmin() {
@@ -110,8 +134,15 @@ export default {
       this.password = "adminpassword"; // Set default admin credentials
     },
   },
+  created() {
+    // Initialize failed attempts from localStorage
+    const storedAttempts = localStorage.getItem("failedAttempts");
+    this.failedAttempts = storedAttempts ? parseInt(storedAttempts) : 0;
+  },
 };
 </script>
+
+
 
 <style scoped>
 .login-page {
@@ -172,15 +203,16 @@ h2 {
   color: #4d2c16;
 }
 
-.checkbox{
+.checkbox {
   width: 20px;
 }
 
-.check-box-div{
+.check-box-div {
   display: flex;
   align-items: start;
   flex-direction: column;
 }
+
 input {
   width: 100%;
   padding: 10px;

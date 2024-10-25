@@ -1,88 +1,96 @@
 <template>
-    <div class="dashboard">
-      <header class="header">
-        <div class="logo">
-          <img src="path-to-your-logo" alt="BrewScape Logo">
-          <h1>BrewScape</h1>
-        </div>
-        <div class="search-bar">
-          <input type="text" placeholder="Search...">
-        </div>
-        <button class="deal-button">Weekly Deal For You</button>
-      </header>
-  
-      <!-- Promo Section 1 -->
-      <section class="promo">
-        <div class="promo-content">
-          <h2>{{ promoMessage }}</h2>
-          <p>Get up? Please! Stay right where you are and enjoy {{ discount }}.</p>
-        </div>
-        <div class="promo-image">
-          <img src="path-to-promo-image-1" alt="Coffee Promotion">
-        </div>
-      </section>
-  
-      <!-- Promo Section 2 (additional) -->
-      <section class="promo second-promo">
-        <div class="promo-content">
-          <h2>{{ secondPromoMessage }}</h2>
-          <p>Enjoy our new seasonal drinks, available now with 10% off for first-time orders!</p>
-        </div>
-        <div class="promo-image">
-          <img src="path-to-promo-image-2" alt="New Seasonal Drinks">
-        </div>
-      </section>
-  
-      <!-- Menu Section -->
-      <section class="menu-section">
-        <div class="menu">
-          <h2>COFFEE & Etc.</h2>
-          <ul>
-            <li v-for="item in coffeeMenu" :key="item.name">
-              {{ item.name }} - {{ item.price }}₱
-            </li>
-          </ul>
-        </div>
-        <div class="menu">
-          <h2>PASTRIES & Etc.</h2>
-          <ul>
-            <li v-for="item in pastriesMenu" :key="item.name">
-              {{ item.name }} - {{ item.price }}₱
-            </li>
-          </ul>
-        </div>
-      </section>
-  
-      <!-- Footer Section with Interactive Rating -->
-      <footer class="footer">
-        <div class="shop-info">
-          <p>Shop Name: BrewScape</p>
-          <p>Shop Location: Your Location</p>
-          <p>Contact: Your Contact Info</p>
-          <p>
-            Ratings:
-            <span
-              v-for="star in 5"
-              :key="star"
-              class="star"
-              :class="{ 'filled': star <= currentRating || star <= hoverRating }"
-              @click="setRating(star)"
-              @mouseover="hoverRating = star"
-              @mouseleave="hoverRating = 0"
-            >
-              ★
-            </span>
-          </p>
-          <p>Your Rating: {{ currentRating }} stars</p>
-        </div>
-      </footer>
-    </div>
-  </template>
+  <div v-if="isAuthenticated" class="dashboard">
+    <header class="header">
+      <div class="logo">
+        <!-- <img src="path-to-your-logo" alt="BrewScape Logo"> -->
+        <h1>BrewScape</h1>
+      </div>
+      <div class="search-bar">
+        <input type="text" placeholder="Search...">
+      </div>
+      <button class="deal-button">Weekly Deal For You</button>
+      <button class="logout-button" @click="logout()">Logout</button>
+    </header>
+
+    <!-- Promo Section 1 -->
+    <section class="promo">
+      <div class="promo-content">
+        <h2>{{ promoMessage }}</h2>
+        <p>Get up? Please! Stay right where you are and enjoy {{ discount }}.</p>
+      </div>
+      <div class="promo-image">
+        <!-- <img src="path-to-promo-image-1" alt="Coffee Promotion"> -->
+      </div>
+    </section>
+
+    <!-- Promo Section 2 (additional) -->
+    <section class="promo second-promo">
+      <div class="promo-content">
+        <h2>{{ secondPromoMessage }}</h2>
+        <p>Enjoy our new seasonal drinks, available now with 10% off for first-time orders!</p>
+      </div>
+      <div class="promo-image">
+        <!-- <img src="path-to-promo-image-2" alt="New Seasonal Drinks"> -->
+      </div>
+    </section>
+
+    <!-- Menu Section -->
+    <section class="menu-section">
+      <div class="menu">
+        <h2>COFFEE & Etc.</h2>
+        <ul>
+          <li v-for="item in coffeeMenu" :key="item.name">
+            {{ item.name }} - {{ item.price }}₱
+          </li>
+        </ul>
+      </div>
+      <div class="menu">
+        <h2>PASTRIES & Etc.</h2>
+        <ul>
+          <li v-for="item in pastriesMenu" :key="item.name">
+            {{ item.name }} - {{ item.price }}₱
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Footer Section with Interactive Rating -->
+    <footer class="footer">
+      <div class="shop-info">
+        <p>Shop Name: BrewScape</p>
+        <p>Shop Location: Your Location</p>
+        <p>Contact: Your Contact Info</p>
+        <p>
+          Ratings:
+          <span
+            v-for="star in 5"
+            :key="star"
+            class="star"
+            :class="{ 'filled': star <= currentRating || star <= hoverRating }"
+            @click="setRating(star)"
+            @mouseover="hoverRating = star"
+            @mouseleave="hoverRating = 0"
+          >
+            ★
+          </span>
+        </p>
+        <p>Your Rating: {{ currentRating }} stars</p>
+      </div>
+    </footer>
+  </div>
+  <div v-else>
+    <h1>You are not authorized to view this page.</h1>
+    <router-link to="/login">Go to Login</router-link>
+  </div>
+</template>
 
 <script>
+import authService from "@/authService"; // Import the auth service
+
 export default {
   data() {
     return {
+      isAuthenticated: false,
       coffeeMenu: [
         { name: 'Iced Cappuccino', price: 120 },
         { name: 'Salted Caramel Cold Brew', price: 120 },
@@ -100,17 +108,32 @@ export default {
       promoMessage: "Relax with a refreshing delivery deal",
       secondPromoMessage: "Exciting seasonal drinks are here!",
       discount: "5% off Coffee orders of P1000+",
-      currentRating: 0,   // To store the selected rating
-      hoverRating: 0      // To handle hover effect over stars
+      currentRating: 0, // To store the selected rating
+      hoverRating: 0 // To handle hover effect over stars
     };
+  },
+  created() {
+    // Check authentication status on component creation
+    this.isAuthenticated = authService.isAuthenticated;
+
+    // Optional: Redirect to login if not authenticated
+    if (!this.isAuthenticated) {
+      this.$router.push("/login");
+    }
   },
   methods: {
     setRating(rating) {
       this.currentRating = rating; // Set the current rating based on user click
-    }
+    },
+    logout() {
+      // authService.clearAuth(); // Use the clearAuth method 
+      localStorage.removeItem("loggedInUserId"); // Clear user data from localStorage
+      this.$router.push("/login"); // Redirect to login page
+    },
   }
 }
 </script>
+
 <style scoped>
 /* Basic Styles */
 body {
@@ -163,6 +186,17 @@ body {
   border: none;
   cursor: pointer;
   font-size: 14px;
+}
+
+/* Logout Button */
+.logout-button {
+  background-color: #d9534f; /* Red color for logout */
+  color: #fff;
+  padding: 10px 15px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 20px; /* Add some space from the deal button */
 }
 
 /* Promo Section */
