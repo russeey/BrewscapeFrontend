@@ -5,10 +5,6 @@
         <div class="logo-section">
           <img src="@/assets/logo.png" alt="Logo" class="logo" />
           <span>BrewScape</span>
-          <ul class="nav-links-left">
-            <!-- <li><a href="#about-us">About Us</a></li>
-            <li><a href="#business-partners">For Business Partners</a></li> -->
-          </ul>
         </div>
       </div>
     </header>
@@ -20,26 +16,41 @@
           v-model="email"
           placeholder="Email or Phone Number"
           required
+          :disabled="isLockedOut"
         />
         <input
           type="password"
           v-model="password"
           placeholder="Password"
           required
+          :disabled="isLockedOut"
         />
         <div class="check-box-div">
           <div class="checkbox-container">
-            <input type="checkbox" id="keep-signed-in" class="checkbox" v-model="keepSignedIn" />
+            <input
+              type="checkbox"
+              id="keep-signed-in"
+              class="checkbox"
+              v-model="keepSignedIn"
+              :disabled="isLockedOut"
+            />
             <label for="keep-signed-in">Keep me signed in</label>
           </div>
           <a href="#">Forgot Username?</a>
           <a href="#">Forgot Password?</a>
         </div>
-        <button type="submit" :disabled="loading">Sign In</button>
+        <button type="submit" :disabled="loading || isLockedOut">
+          Sign In
+        </button>
       </form>
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <p v-if="isLockedOut" class="error">
+        Please wait {{ countdown }} seconds before trying again.
+      </p>
       <div class="signup-section">
-        <p>JOIN US AND EXPLORE LOCAL COFFEE SHOP HERE<br /><span>IN CDO</span></p>
+        <p>
+          JOIN US AND EXPLORE LOCAL COFFEE SHOP HERE<br /><span>IN CDO</span>
+        </p>
         <router-link to="/signup" class="join-now-btn">Join now</router-link>
       </div>
       <p class="admin-link" @click="loginAsAdmin">Sign in as coffee shop administrator</p>
@@ -59,10 +70,13 @@ export default {
       password: "",
       errorMessage: "",
       loading: false,
-      keepSignedIn: false, 
-      failedAttempts: 0, 
-      maxAttempts: 3, 
+      keepSignedIn: false,
+      failedAttempts: 0,
+      maxAttempts: 3,
       timeoutMinutes: 5,
+      isLockedOut: false,
+      countdown: 30, // 30 seconds countdown
+      countdownInterval: null, // Interval ID for countdown
     };
   },
   methods: {
@@ -72,14 +86,17 @@ export default {
 
       // Check if timeout period is active
       if (timeoutEndTimestamp && currentTimestamp < timeoutEndTimestamp) {
-        const remainingTime = Math.ceil((timeoutEndTimestamp - currentTimestamp) / 60000);
-        this.errorMessage = `Too many failed attempts. Please wait ${remainingTime} minutes.`;
+        this.startCountdown();
         return;
       }
 
       this.loading = true; // Show loading state
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          this.email,
+          this.password
+        );
         const user = userCredential.user;
 
         // Set authentication status in authService
@@ -96,18 +113,16 @@ export default {
           localStorage.setItem("email", this.email);
         }
 
-        // Redirect all users to the dashboard
         this.$router.push("/dashboard");
-
       } catch (error) {
         console.error("Login error:", error);
         this.handleLoginError(error);
       } finally {
-        this.loading = false; // Stop loading state
+        this.loading = false; 
       }
     },
     handleLoginError(error) {
-      // Customize error messages
+      
       if (error.code === "auth/invalid-email") {
         this.errorMessage = "Invalid email format.";
       } else if (error.code === "auth/user-not-found") {
@@ -115,7 +130,7 @@ export default {
       } else if (error.code === "auth/wrong-password") {
         this.errorMessage = "Incorrect password. Please try again.";
       } else {
-        this.errorMessage = "Login failed. Please try again.";
+        this.errorMessage = "Invalid Username or Password.";
       }
 
       // Increment failed attempts
@@ -125,24 +140,59 @@ export default {
       if (this.failedAttempts >= this.maxAttempts) {
         const timeoutEndTimestamp = new Date().getTime() + 30 * 1000;
         localStorage.setItem("timeoutEndTimestamp", timeoutEndTimestamp);
-        this.errorMessage = `Too many failed attempts. Please wait 30 seconds before trying again.`;
+        this.isLockedOut = true;
+        this.startCountdown(); // Start countdown when locked out
+        this.errorMessage = "Too many failed attempts.";
       }
     },
-    // loginAsAdmin() {
-    //   this.email = "admin@example.com";
-    //   this.password = "adminpassword";
-    // },
+    startCountdown() {
+      // Calculate remaining time if returning within timeout
+      const timeoutEndTimestamp = localStorage.getItem("timeoutEndTimestamp");
+      if (timeoutEndTimestamp) {
+        const remainingTime = Math.ceil(
+          (timeoutEndTimestamp - new Date().getTime()) / 1000
+        );
+        this.countdown = remainingTime > 0 ? remainingTime : 0;
+      }
+
+      if (this.countdownInterval) clearInterval(this.countdownInterval);
+
+      this.countdownInterval = setInterval(() => {
+        if (this.countdown > 0) {
+          this.countdown -= 1;
+        } else {
+          this.resetLockout();
+        }
+      }, 1000);
+    },
+    resetLockout() {
+      this.isLockedOut = false;
+      this.countdown = 30;
+      clearInterval(this.countdownInterval);
+      localStorage.removeItem("timeoutEndTimestamp");
+      localStorage.removeItem("failedAttempts");
+
+      this.errorMessage = "";
+    },
   },
+
   created() {
-    // Initialize failed attempts from localStorage
     const storedAttempts = localStorage.getItem("failedAttempts");
     this.failedAttempts = storedAttempts ? parseInt(storedAttempts) : 0;
+
+
+    const timeoutEndTimestamp = localStorage.getItem("timeoutEndTimestamp");
+    if (timeoutEndTimestamp && new Date().getTime() < timeoutEndTimestamp) {
+      this.isLockedOut = true;
+      this.startCountdown();
+    }
+  },
+  beforeDestroy() {
+
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
   },
 };
 </script>
-
-
-
 <style scoped>
 .login-page {
   background-image: url(https://image.slidesdocs.com/responsive-images/background/coffee-culture-illustration-powerpoint-background_e224109f77__960_540.jpg);
@@ -174,15 +224,15 @@ export default {
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 15px; /* Reduced gap between logo and text */
+  gap: 15px; 
 }
 .logo-section .logo {
-  width: 30px; /* Reduced logo size */
+  width: 30px; 
   height: auto;
 }
 
 .logo-section span {
-  font-size: 1.2rem; /* Reduced font size for compact design */
+  font-size: 1.2rem;
   font-weight: bold;
   color: #4b2d1f;
 }

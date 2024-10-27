@@ -6,17 +6,14 @@
           <img src="@/assets/logo.png" alt="Logo" class="logo" />
           <span>BrewScape</span>
           <ul class="nav-links-left">
-            <!-- <li><a href="#about-us">About Us</a></li>
-            <li><a href="#business-partners">For Business Partners</a></li> -->
+   
           </ul>
         </div>
       </div>
     </header>
     <div class="signup-form-container">
       <h1>Create an account</h1>
-      <!-- <div class="logo">
-        <img :src="coffeeLogo" alt="coffee logo" width="60" />
-      </div> -->
+
       <form @submit.prevent="handleSignup">
         <div class="name-fields">
           <input
@@ -167,15 +164,15 @@ export default {
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 15px; /* Reduced gap between logo and text */
+  gap: 15px; 
 }
 .logo-section .logo {
-  width: 30px; /* Reduced logo size */
+  width: 30px;
   height: auto;
 }
 
 .logo-section span {
-  font-size: 1.2rem; /* Reduced font size for compact design */
+  font-size: 1.2rem;
   font-weight: bold;
   color: #4b2d1f;
 } 
