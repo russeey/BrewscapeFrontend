@@ -1,5 +1,5 @@
 <template>
-  <div v-if="authService.isAuthenticated" class="dashboard">
+  <div v-if="isAuthenticated" class="dashboard">
     <header-component
       @go-to-cart="goToCart"
       @go-to-profile="goToProfile"
@@ -14,12 +14,6 @@
     <promo-component
       :message="promoMessage"
       :discount="discount"
-    />
-
-    <promo-component
-      :message="secondPromoMessage"
-      :imageSrc="require('@/assets/images.png')"
-      :isSecondPromo="true"
     />
 
     <section class="menu-section">
@@ -42,6 +36,7 @@
     </section>
 
     <footer class="footer">
+      <p> 2023 BrewScape. All rights reserved.</p>
     </footer>
   </div>
   <div v-else>
@@ -57,6 +52,8 @@ import SearchBarComponent from './SearchBarComponent.vue';
 import PromoComponent from './PromoComponent.vue';
 import ShopInfoComponent from './ShopInfoComponent.vue';
 import MenuComponent from './MenuComponent.vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'Dashboard',
@@ -67,55 +64,76 @@ export default {
     ShopInfoComponent,
     MenuComponent
   },
-  data() {
-    return {
-      searchTerm: '',
-      coffeeMenu: [
-        { name: 'Iced Cappuccino', price: 120 },
-        { name: 'Salted Caramel Cold Brew', price: 120 },
-        { name: 'Caffè Misto', price: 120 },
-        { name: 'Iced Caffè Latte', price: 120 },
-        { name: 'Iced Caffè Mocha', price: 120 },
-        { name: 'Iced Caramel Macchiato', price: 120 }
-      ],
-      pastriesMenu: [
-        { name: 'Carrotita Cake', price: 100 },
-        { name: 'Brookie Whoopie Pie', price: 100 },
-        { name: 'Chocolate Truffle', price: 100 },
-        { name: 'Sausage Roll', price: 100 }
-      ],
-      promoMessage: "Relax with a refreshing delivery deal",
-      secondPromoMessage: "Special Offer",
-      discount: "5% off Coffee orders of P1000+",
-      currentRating: 0
-    };
-  },
-  created() {
-    // Load saved rating
-    const savedRating = localStorage.getItem('brewscapeRating');
-    if (savedRating) {
-      this.currentRating = parseInt(savedRating);
-    }
-  },
-  methods: {
-    goToProfile() {
-      this.$router.push("/profile");
-    },
-    goToCart() {
-      this.$router.push("/cart");
-    },
-    setRating(rating) {
-      this.currentRating = rating;
-      localStorage.setItem('brewscapeRating', rating);
-    },
-    async logout() {
-      const result = await authService.logout();
-      if (result.success) {
-        this.$router.push("/login");
-      } else {
-        console.error("Logout failed:", result.error);
+  setup() {
+    const router = useRouter();
+    const searchTerm = ref('');
+    const isAuthenticated = ref(false);
+    const coffeeMenu = ref([
+      { name: 'Iced Cappuccino', price: 120 },
+      { name: 'Salted Caramel Cold Brew', price: 120 },
+      { name: 'Caffè Misto', price: 120 },
+      { name: 'Caramel Macchiato', price: 120 },
+      { name: 'Iced Coffee', price: 120 }
+    ]);
+    const pastriesMenu = ref([
+      { name: 'Chocolate Chip Cookie', price: 60 },
+      { name: 'Classic Croissant', price: 60 },
+      { name: 'Blueberry Muffin', price: 60 }
+    ]);
+    const promoMessage = ref("Relax with a refreshing delivery deal");
+    const secondPromoMessage = ref("Special Offer");
+    const discount = ref("5% off Coffee orders of P1000+");
+    const currentRating = ref(0);
+
+    onMounted(() => {
+      isAuthenticated.value = authService.isAuthenticated();
+      const savedRating = localStorage.getItem('brewscapeRating');
+      if (savedRating) {
+        currentRating.value = parseInt(savedRating);
       }
-    }
+
+      // Add auth state listener
+      authService.addAuthStateListener((user) => {
+        isAuthenticated.value = !!user;
+      });
+    });
+
+    const goToProfile = () => {
+      router.push("/profile");
+    };
+
+    const goToCart = () => {
+      router.push("/cart");
+    };
+
+    const setRating = (rating) => {
+      currentRating.value = rating;
+      localStorage.setItem('brewscapeRating', rating.toString());
+    };
+
+    const logout = async () => {
+      try {
+        await authService.signOut();
+        router.push('/login');
+      } catch (error) {
+        console.error('Error signing out:', error);
+      }
+    };
+
+    return {
+      isAuthenticated,
+      searchTerm,
+      coffeeMenu,
+      pastriesMenu,
+      promoMessage,
+      secondPromoMessage,
+      discount,
+      currentRating,
+      goToProfile,
+      goToCart,
+      setRating,
+      logout
+    };
   }
 };
 </script>
@@ -137,5 +155,7 @@ export default {
 .footer p {
   font-size: 18px;
   color: #555;
+  text-align: center;
+  margin-top: 40px;
 }
 </style>

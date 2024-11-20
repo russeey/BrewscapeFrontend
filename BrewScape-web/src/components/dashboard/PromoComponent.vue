@@ -1,11 +1,11 @@
 <template>
-  <section class="promo" :class="{ 'second-promo': isSecondPromo }">
+  <section class="promo">
+    <div class="promo-image">
+      <img src="@/assets/promotion.png"/>
+    </div>
     <div class="promo-content">
       <h2>{{ message }}</h2>
       <p v-if="discount">Get up? Please! Stay right where you are and enjoy {{ discount }}.</p>
-    </div>
-    <div class="promo-image">
-      <img v-if="imageSrc" :src="imageSrc"/>
     </div>
   </section>
 </template>
@@ -21,14 +21,6 @@ export default {
     discount: {
       type: String,
       default: ''
-    },
-    imageSrc: {
-      type: String,
-      default: ''
-    },
-    isSecondPromo: {
-      type: Boolean,
-      default: false
     }
   }
 }
@@ -39,60 +31,106 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 5px;
   background-color: #f9f9f9;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
-  width: 50%;
-  margin-left: auto;
-}
-
-.promo.second-promo {
-  width: 50%;
-  margin: -300px 0 20px 0;
-  padding: 0;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  background-color: #d09a5b;
-  position: relative;
-  left: 0;
-}
-
-.promo-image {
-  width: 65%;
-  height: 300px;
-  overflow: hidden;
-}
-
-.promo-image img {
-  width: 50%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+  width: 100%;
+  min-height: 400px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  padding: 40px;
+  gap: 40px;
 }
 
 .promo-content {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 20px;
-  margin-left: 200px;
+  align-items: flex-start;
+  text-align: left;
+  flex: 1;
+  padding-left: 40px;
 }
 
 .promo-content h2 {
-  font-size: 24px;
-  font-weight: 1000;
+  font-size: 32px;
+  font-weight: 800;
   color: #bd8e50;
+  margin-bottom: 20px;
+  line-height: 1.2;
 }
 
 .promo-content p {
   font-size: 20px;
   font-weight: 600;
   color: #4d2c16;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.promo-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-right: 40px;
 }
 
 .promo-image img {
-  width: 180px;
-  border-radius: 10px;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.promo-image img:hover {
+  transform: scale(1.02);
+}
+
+@media (max-width: 1024px) {
+  .promo {
+    padding: 30px;
+    gap: 30px;
+  }
+
+  .promo-content {
+    padding-left: 20px;
+  }
+
+  .promo-image {
+    padding-right: 20px;
+  }
+
+  .promo-content h2 {
+    font-size: 28px;
+  }
+
+  .promo-content p {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .promo {
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .promo-content {
+    padding-left: 0;
+    align-items: center;
+    text-align: center;
+  }
+
+  .promo-image {
+    padding-right: 0;
+  }
+
+  .promo-image img {
+    max-width: 300px;
+  }
 }
 </style>

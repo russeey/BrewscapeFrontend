@@ -3,9 +3,8 @@
     <h2>{{ title }}</h2>
     <ul>
       <li 
-        v-for="item in items" 
+        v-for="item in filteredItems" 
         :key="item.name"
-        :class="{ highlighted: isHighlighted(item.name) }"
       >
         {{ item.name }} - {{ item.price }}₱
       </li>
@@ -30,9 +29,13 @@ export default {
       default: ''
     }
   },
-  methods: {
-    isHighlighted(itemName) {
-      return itemName.toLowerCase().includes(this.searchTerm.toLowerCase());
+  computed: {
+    filteredItems() {
+      if (!this.searchTerm) return this.items;
+      const search = this.searchTerm.toLowerCase();
+      return this.items.filter(item => 
+        item.name.toLowerCase().includes(search)
+      );
     }
   }
 }
@@ -45,6 +48,7 @@ export default {
   align-items: center;
   display: flex;
   flex-direction: column;
+  padding: 0 20px;
 }
 
 .menu h2 {
@@ -57,6 +61,7 @@ export default {
 .menu ul {
   list-style: none;
   padding: 0;
+  width: 100%;
 }
 
 .menu ul li {
@@ -72,9 +77,11 @@ export default {
   color: #444;
   box-shadow: none;
   text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.highlighted {
-  background-color: #ffeb3b;
+.menu ul li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 </style>
