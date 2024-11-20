@@ -1,15 +1,13 @@
 <template>
   <div v-if="isAuthenticated" class="dashboard">
-    <header-component
-      @go-to-cart="goToCart"
-      @go-to-profile="goToProfile"
-      @logout="logout"
-    />
-
-    <search-bar-component
-      :searchTerm="searchTerm"
-      @input="searchTerm = $event"
-    />
+    <nav class="navbar">
+      <div class="nav-brand">BrewScape</div>
+      <div class="nav-links">
+        <button class="nav-btn" @click="goToCart">Cart</button>
+        <button class="nav-btn" @click="goToProfile">Profile</button>
+        <button class="nav-btn logout" @click="logout">Logout</button>
+      </div>
+    </nav>
 
     <promo-component
       :message="promoMessage"
@@ -22,17 +20,27 @@
         @update-rating="setRating"
       />
 
-      <menu-component
-        title="COFFEE & Etc."
-        :items="coffeeMenu"
-        :searchTerm="searchTerm"
-      />
+      <div class="menu-container">
+        <search-bar-component
+          :searchTerm="searchTerm"
+          @input="searchTerm = $event"
+          class="search-above-menu"
+        />
+        
+        <div class="menu-items">
+          <menu-component
+            title="COFFEE & Etc."
+            :items="coffeeMenu"
+            :searchTerm="searchTerm"
+          />
 
-      <menu-component
-        title="PASTRIES & Etc."
-        :items="pastriesMenu"
-        :searchTerm="searchTerm"
-      />
+          <menu-component
+            title="PASTRIES & Etc."
+            :items="pastriesMenu"
+            :searchTerm="searchTerm"
+          />
+        </div>
+      </div>
     </section>
 
     <footer class="footer">
@@ -47,9 +55,8 @@
 
 <script>
 import authService from "@/services/authService";
-import HeaderComponent from './HeaderComponent.vue';
-import SearchBarComponent from './SearchBarComponent.vue';
 import PromoComponent from './PromoComponent.vue';
+import SearchBarComponent from './SearchBarComponent.vue';
 import ShopInfoComponent from './ShopInfoComponent.vue';
 import MenuComponent from './MenuComponent.vue';
 import { ref, computed, onMounted } from 'vue';
@@ -58,9 +65,8 @@ import { useRouter } from 'vue-router';
 export default {
   name: 'Dashboard',
   components: {
-    HeaderComponent,
-    SearchBarComponent,
     PromoComponent,
+    SearchBarComponent,
     ShopInfoComponent,
     MenuComponent
   },
@@ -146,10 +152,72 @@ export default {
   border-radius: 12px;
 }
 
-.menu-section {
+.navbar {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background-color: #4d2c16;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.nav-brand {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+}
+
+.nav-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn.logout {
+  background-color: #bd8e50;
+}
+
+.nav-btn.logout:hover {
+  background-color: #a67b43;
+}
+
+.menu-section {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   margin-top: 40px;
+}
+
+.menu-container {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.menu-items {
+  display: flex;
+  gap: 30px;
+}
+
+.search-above-menu {
+  width: 100%;
 }
 
 .footer p {
@@ -157,5 +225,27 @@ export default {
   color: #555;
   text-align: center;
   margin-top: 40px;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .nav-links {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .menu-section {
+    flex-direction: column;
+  }
+
+  .menu-items {
+    flex-direction: column;
+  }
 }
 </style>

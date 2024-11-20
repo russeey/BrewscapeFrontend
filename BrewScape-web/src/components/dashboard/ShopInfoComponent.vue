@@ -98,11 +98,12 @@ export default {
 }
 
 .shop-image {
-  width: 100%;
-  height: 250px;
-  object-fit: cover;
+  width: 80%;
+  height: 200px;
+  object-fit: contain;
   border-radius: 8px 8px 0 0;
-  margin-bottom: 0;
+  margin: 20px auto;
+  display: block;
 }
 
 @media (max-width: 768px) {
@@ -112,7 +113,8 @@ export default {
   }
 
   .shop-image {
-    height: 200px;
+    width: 70%;
+    height: 150px;
   }
 }
 </style>
