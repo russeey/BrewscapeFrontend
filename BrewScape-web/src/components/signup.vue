@@ -5,9 +5,7 @@
         <div class="logo-section">
           <img src="@/assets/logo.png" alt="Logo" class="logo" />
           <span>BrewScape</span>
-          <ul class="nav-links-left">
-   
-          </ul>
+          <ul class="nav-links-left"></ul>
         </div>
       </div>
     </header>
@@ -39,6 +37,7 @@
           type="text"
           v-model="phoneNumber"
           placeholder="Phone Number"
+          @input="validatePhoneNumber"
           required
         />
         <input
@@ -46,11 +45,11 @@
           v-model="password"
           placeholder="Password"
           required
-        />  
+        />
         <input
           type="text"
           v-model="location"
-          placeholder="location"
+          placeholder="Location"
           required
         />
         <div class="birth-gender">
@@ -68,14 +67,14 @@
           <a href="#">Cookies Policy</a>.
         </p>
         <button type="submit" :disabled="loading">Sign Up</button>
-      </form> 
+      </form>
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
 
 <script>
-import { auth } from "@/firebase.config"; // Import the auth instance
+import { auth } from "@/firebase.config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 
 export default {
@@ -91,12 +90,12 @@ export default {
       gender: "",
       errorMessage: "",
       loading: false,
-      coffeeLogo: "@/assets/logo.png", // Path to the coffee logo
+      coffeeLogo: "@/assets/logo.png",
     };
   },
   methods: {
     async handleSignup() {
-      this.loading = true; // Start loading
+      this.loading = true;
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -105,12 +104,11 @@ export default {
         );
         const user = userCredential.user;
         console.log("User signed up:", user);
-        this.$router.push("/dashboard"); // Redirect to home page after signup
+        this.$router.push("/dashboard");
       } catch (error) {
         console.error("Error during signup:", error);
         if (error.code === "auth/email-already-in-use") {
-          this.errorMessage =
-            "This email is already registered. Try logging in.";
+          this.errorMessage = "This email is already registered. Try logging in.";
         } else if (error.code === "auth/invalid-email") {
           this.errorMessage = "Please enter a valid email address.";
         } else if (error.code === "auth/weak-password") {
@@ -119,12 +117,19 @@ export default {
           this.errorMessage = "Signup failed. Please try again.";
         }
       } finally {
-        this.loading = false; // Stop loading
+        this.loading = false;
       }
+    },
+    validatePhoneNumber() {
+      this.phoneNumber = this.phoneNumber.replace(/\D/g, '');
     },
   },
 };
 </script>
+
+<style scoped>
+</style>
+
 
 <style scoped>
 .signup-page {

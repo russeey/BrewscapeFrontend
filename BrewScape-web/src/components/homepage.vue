@@ -136,16 +136,16 @@
   .logo-section {
     display: flex;
     align-items: center;
-    gap: 15px; /* Reduced gap between logo and text */
+    gap: 15px; 
   }
 
   .logo-section .logo {
-    width: 30px; /* Reduced logo size */
+    width: 30px; 
     height: auto;
   }
 
   .logo-section span {
-    font-size: 1.2rem; /* Reduced font size for compact design */
+    font-size: 1.2rem; 
     font-weight: bold;
     color: #4b2d1f;
   }
@@ -153,12 +153,12 @@
   .nav-links-left {
     display: flex;
     list-style: none;
-    gap: 15px; /* Reduced gap between links */
+    gap: 15px; 
   }
 
   .nav-links-left li a {
     text-decoration: none;
-    font-size: 0.9rem; /* Reduced font size for links */
+    font-size: 0.9rem; 
     color: #4b2d1f;
     transition: color 0.3s ease;
   }
@@ -170,16 +170,16 @@
   .nav {
     display: flex;
     list-style: none;
-    gap: 15px; /* Reduced gap between right-side buttons */
+    gap: 15px; 
   }
 
   .nav .button {
-    padding: 10px 15px; /* Reduced button padding for compact design */
+    padding: 10px 15px; 
     background-color: #8a5e4a;
     color: #fff;
-    border-radius: 10px; /* Smaller border-radius */
+    border-radius: 10px; 
     text-decoration: none;
-    font-size: 0.9rem; /* Reduced font size */
+    font-size: 0.9rem; 
     transition: background-color 0.3s ease;
     cursor: pointer;
   }
@@ -221,7 +221,7 @@
     text-align: left;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Make sure text is vertically centered */
+    justify-content: center; 
   }
 
   .promo-text h2 {
@@ -250,7 +250,7 @@
 
   .winter-game {
     text-align: left;
-    max-width: 45%; /* Adjust the width of the winter game section */
+    max-width: 45%; 
   }
 
   .winter-game h2 {
@@ -277,15 +277,15 @@
     background-color: #2f1a0f;
   }
 
-  /* Responsive Adjustments */
+ 
   @media (max-width: 768px) {
     .promo {
-      flex-direction: column; /* Stack the items on smaller screens */
+      flex-direction: column; 
       text-align: center;
     }
 
     .promo-content {
-      flex-direction: column; /* Stack image and text on small screens */
+      flex-direction: column; 
     }
 
     .promo-text,
@@ -325,7 +325,7 @@
     justify-content: center;
     flex-wrap: wrap;
     text-align: center;
-    position: relative; /* Enable absolute positioning for children */
+    position: relative; 
   }
 
   .explore-content img {

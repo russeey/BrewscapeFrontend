@@ -33,17 +33,18 @@
     <h2>{{ secondPromoMessage }}</h2>
   </div>
   <div class="promo-image">
-    <img src="@/assets/promotion.png" alt="New Seasonal Drinks" />
+    <img src="@/assets/promotion.png"/>
   </div>
 </section>
 
-    <section class="menu-section">
-      <div class="shop-info" style="border: 3px solid #e0e0e0; padding: 10px; border-radius: 8px;">
-        <div class="shop-details">
-          <p>Shop Name: BrewScape</p> 
-          <p>Shop Location: Your Location</p>
-          <p>Contact: Your Contact Info</p>
-        </div>
+<section class="menu-section">
+  <div class="shop-info">
+    <div class="shop-details">
+      <p><span class="label">Shop Name:</span> BrewScape</p>
+      <p><span class="label">Shop Location:</span> Pabayo-Chaves Street, Cagayan de Oro City</p>
+      <p><span class="label">Contact:</span> 09*********</p>
+    </div>
+
         <div class="shop-rating">
           <p>
             Ratings:
@@ -92,7 +93,7 @@
 
     <!-- Footer Section -->
     <footer class="footer">
-      <!-- Footer has been removed as per your request -->
+
     </footer>
   </div>
   <div v-else>
@@ -135,6 +136,12 @@ export default {
 
     if (!this.isAuthenticated) {
       this.$router.push("/login");
+    } else {
+      // Load the rating from localStorage if it exists
+      const savedRating = localStorage.getItem('brewscapeRating');
+      if (savedRating) {
+        this.currentRating = parseInt(savedRating);
+      }
     }
   },
   computed: {
@@ -151,13 +158,15 @@ export default {
   },
   methods: {
     goToProfile() {
-      this.$router.push("/profile"); // Redirect to the profile page
+      this.$router.push("/profile");
     },
     goToCart() {
-      this.$router.push("/cart"); // Redirect to the cart page
+      this.$router.push("/cart");
     },
     setRating(rating) {
       this.currentRating = rating;
+      // Save the rating to localStorage
+      localStorage.setItem('brewscapeRating', rating);
     },
     logout() {
       localStorage.removeItem("loggedInUserId");
@@ -169,6 +178,7 @@ export default {
   }
 };
 </script>
+
 
 
 
@@ -195,6 +205,11 @@ export default {
   outline: none; 
   transition: border-color 0.3s;
 }
+
+.label {
+  font-weight: bold; /* Makes the text bold */
+}
+
 
 .search-input:focus {
   border-color: #4b2d1f; 
@@ -302,17 +317,28 @@ export default {
   display: block; 
 }
 
+.promo-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center; 
+  text-align: center; 
+  padding: 20px;
+  margin-left: 200px;
+}
 
 
-  .promo-content h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
-  }
+.promo-content h2 {
+  font-size: 24px;
+  font-weight: 1000; 
+  color: #bd8e50;
+}
+
 
   .promo-content p {
-    font-size: 18px;
-    color: #777;
+    font-size: 20px;
+    font-weight: 600;
+    color: #4d2c16;
   }
 
   .promo-image img {
@@ -333,7 +359,7 @@ export default {
   background-color: white; 
   border: 1px solid #e0e0e0; 
   border-radius: 8px; 
-  text-align: center; 
+  text-align: Left; 
   margin-bottom: auto;
   display: flex; 
   flex-direction: column; 

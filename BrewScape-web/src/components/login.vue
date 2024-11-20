@@ -36,7 +36,6 @@
             />
             <label for="keep-signed-in">Keep me signed in</label>
           </div>
-          <a href="#">Forgot Username?</a>
           <a href="#">Forgot Password?</a>
         </div>
         <button type="submit" :disabled="loading || isLockedOut">
@@ -298,7 +297,7 @@ button {
   padding: 10px;
   width: 100%;
   background-color: #fbe5c7;
-  color: #4d2c16;
+  color: #000000;
   border-radius: 5px;
   cursor: pointer;
 }
@@ -309,7 +308,7 @@ button[disabled] {
 }
 
 button:hover:not([disabled]) {
-  background-color: #ffffff;
+  background-color: #4d2c16;
 }
 
 .signup-section {
