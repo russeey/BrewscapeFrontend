@@ -63,10 +63,15 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 300px;
+  max-width: 400px;
+  min-height: 400px;
+  height: fit-content;
 }
 
 .shop-details {
   padding: 20px;
+  flex: 1;
 }
 
 .shop-details p {

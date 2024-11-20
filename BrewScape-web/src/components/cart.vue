@@ -1,15 +1,19 @@
 <template>
   <div v-if="isAuthenticated" class="cart-page dashboard-container">
-    <header class="header">
-      <div class="logo">
-        <h1>BrewScape</h1>
+    <nav class="navbar">
+      <div class="nav-brand">BrewScape</div>
+      <div class="nav-links">
+        <button class="nav-btn" @click="goToDashboard">
+          <i class="fas fa-home"></i> Dashboard
+        </button>
+        <button class="nav-btn" @click="goToProfile">
+          <i class="fas fa-user"></i> Profile
+        </button>
+        <button class="nav-btn logout" @click="logout">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
       </div>
-      <div class="header-buttons">
-        <button class="dashboard-button" @click="goToDashboard">Dashboard</button>
-        <button class="profile-button" @click="goToProfile">Profile</button>
-        <button class="logout-button" @click="logout">Logout</button>
-      </div>
-    </header>
+    </nav>
 
     <section class="cart-content">
       <h2>Order</h2>
@@ -53,20 +57,18 @@
           </div>
 
           <div>
-
-
-  <label for="gcash-pin">Gcash PIN</label>
-  <input 
-    type="password" 
-    id="gcash-pin" 
-    v-model="gcashDetails.pin" 
-    required 
-    pattern="\d{4}" 
-    maxlength="4" 
-    title="Please enter a 4-digit PIN" 
-    @input="validateGcashPin" 
-  />
-</div>
+            <label for="gcash-pin">Gcash PIN</label>
+            <input 
+              type="password" 
+              id="gcash-pin" 
+              v-model="gcashDetails.pin" 
+              required 
+              pattern="\d{4}" 
+              maxlength="4" 
+              title="Please enter a 4-digit PIN" 
+              @input="validateGcashPin" 
+            />
+          </div>
           <div>
             <label for="gcash-amount">Amount</label>
             <input type="text" id="gcash-amount" v-model="gcashDetails.amount" readonly />
@@ -96,7 +98,6 @@
     <router-link to="/login">Go to Login</router-link>
   </div>
 </template>
-
 
 <script>
 import authService from "@/authService";
@@ -132,12 +133,12 @@ export default {
       this.gcashDetails.number = this.gcashDetails.number.replace(/[^0-9]/g, '');
     },
 
-     validateGcashPin() {
-    this.gcashDetails.pin = this.gcashDetails.pin.replace(/[^0-9]/g, ''); // Remove non-numeric characters
-    if (this.gcashDetails.pin.length > 4) {
-      this.gcashDetails.pin = this.gcashDetails.pin.substring(0, 4); // Limit to 4 digits
-    }
-  },
+    validateGcashPin() {
+      this.gcashDetails.pin = this.gcashDetails.pin.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+      if (this.gcashDetails.pin.length > 4) {
+        this.gcashDetails.pin = this.gcashDetails.pin.substring(0, 4); // Limit to 4 digits
+      }
+    },
   
     goToDashboard() {
       this.$router.push("/dashboard");
@@ -178,8 +179,52 @@ export default {
 };
 </script>
 
-
 <style scoped>
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background-color: #4d2c16;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.nav-brand {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+}
+
+.nav-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn.logout {
+  background-color: #bd8e50;
+}
+
+.nav-btn.logout:hover {
+  background-color: #a67b43;
+}
+
 .dashboard-container {
   min-height: 100vh;
   padding: 40px;
@@ -187,40 +232,6 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: auto;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #f4f4f4;
-  padding: 20px 30px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.logo h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-left: -29px;
-}
-
-.header-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.dashboard-button,
-.profile-button,
-.logout-button {
-  background-color: #4b2d1f;
-  color: white;
-  font-size: 16px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
 .cart-content {

@@ -149,7 +149,7 @@ export default {
   padding: 40px;
   background-color: #f8e2c2;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
+  min-height: 100vh;
 }
 
 .navbar {
@@ -202,18 +202,21 @@ export default {
   flex-direction: row;
   justify-content: space-between;
   margin-top: 40px;
+  min-height: 600px;
 }
 
 .menu-container {
   flex: 2;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  min-width: 600px;
+  height: fit-content;
 }
 
 .menu-items {
   display: flex;
   gap: 30px;
+  min-height: 400px;
 }
 
 .search-above-menu {

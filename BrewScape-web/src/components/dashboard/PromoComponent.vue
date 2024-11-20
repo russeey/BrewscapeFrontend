@@ -46,9 +46,10 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  text-align: left;
+  text-align: center;
   flex: 1;
   padding-left: 40px;
+  transform: translateX(-50px);
 }
 
 .promo-content h2 {
@@ -57,6 +58,8 @@ export default {
   color: #bd8e50;
   margin-bottom: 20px;
   line-height: 1.2;
+  text-align: right;
+  transform: translateX(20px); 
 }
 
 .promo-content p {

@@ -1,16 +1,13 @@
 <template>
   <div class="dashboard-container">
-    <header class="header">
-      <div class="logo">
-        <h1>BrewScape</h1>
+    <nav class="navbar">
+      <div class="nav-brand">BrewScape</div>
+      <div class="nav-links">
+        <button class="nav-btn" @click="goToCart">Cart</button>
+        <button class="nav-btn" @click="goToDashboard">Dashboard</button>
+        <button class="nav-btn logout" @click="logout">Logout</button>
       </div>
-      <div class="header-buttons">
-        <button class="cart-button" @click="goToCart">Cart</button>
-        <button class="dashboard-button" @click="goToDashboard">Dashboard</button>
-        <button class="logout-button" @click="logout">Logout</button>
-      </div>
-    </header>
-
+    </nav>
     <div class="dashboard-content">
       <div class="personal-info">
         <h2>Personal Information</h2>
@@ -75,11 +72,15 @@
 
 <script>
 import profileImage from '@/assets/gratis-png-noragami-anime-manga-yato-no-kami-youtube-anime-thumbnail.png';
+import NavbarComponent from './NavbarComponent.vue';
 
 export default {
+  components: {
+    NavbarComponent
+  },
   data() {
     return {
-      profileImage, 
+      profileImage,
       isEditProfileModalOpen: false,
       user: this.getUserProfile(), 
       editedUser: { 
@@ -143,25 +144,60 @@ export default {
 </script>
 
 <style scoped>
-</style>
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background-color: #4d2c16;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
 
+.nav-brand {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+}
 
-<style scoped>
-html, body {
-  height: 100%; 
-  margin: 0; 
+.nav-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn.logout {
+  background-color: #bd8e50;
+}
+
+.nav-btn.logout:hover {
+  background-color: #a67b43;
 }
 
 .dashboard-container {
-  min-height: 100vh; 
+  min-height: 100vh;
   padding: 40px;
   background-color: #f8e2c2;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  overflow: auto; 
+  overflow: auto;
 }
-
 
 .personal-info {
   display: flex;
@@ -189,65 +225,6 @@ html, body {
   top: 7%;
   transform: translateY(-50%); 
   padding: 5px 10px; 
-}
-
-
-
-
-.header {
-  display: flex;
-  justify-content: space-between; 
-  align-items: center; 
-  background-color: #f4f4f4; 
-  padding: 20px 30px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-}
-
-.logo h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #2c3e50; 
-  margin-left: -29px; 
-}
-
-.header-buttons {
-  display: flex; 
-}
-
-.logout-button, .dashboard-button, .cart-button {
-  background-color: #4b2d1f; 
-  color: white;
-  margin-left: 20px;
-}
-
-button {
-  font-size: 16px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.dashboard-content {
-  flex-grow: 1; 
-  margin-top: 0; 
-  display: flex; 
-  justify-content: flex-start; 
-  align-items: flex-start; 
-}
-
-.personal-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center; 
-  text-align: left; 
-  margin-top: -3px; 
 }
 
 .image-container {
