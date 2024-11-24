@@ -4,12 +4,19 @@ import authService from '@/services/authService';
 const routes = [
   {
     path: '/',
-    redirect: '/dashboard'
+    name: 'Landing',
+    component: () => import('@/components/homepage.vue'),
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
+    component: () => import('@/components/login.vue'),
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/signup',
+    name: 'Signup',
+    component: () => import('@/components/signup.vue'),
     meta: { requiresGuest: true }
   },
   {
@@ -21,18 +28,18 @@ const routes = [
   {
     path: '/profile',
     name: 'Profile',
-    component: () => import('@/views/Profile.vue'),
+    component: () => import('@/components/profile.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/cart',
     name: 'Cart',
-    component: () => import('@/views/Cart.vue'),
+    component: () => import('@/components/cart.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/dashboard'
+    redirect: '/'
   }
 ];
 

@@ -22,7 +22,7 @@
 
 <script>
 import { useRouter } from 'vue-router';
-import { getAuth, signOut } from 'firebase/auth';
+import authService from '../services/authService';
 
 export default {
   name: 'NavbarComponent',
@@ -42,7 +42,6 @@ export default {
   },
   setup() {
     const router = useRouter();
-    const auth = getAuth();
 
     const goToCart = () => {
       router.push('/cart');
@@ -58,7 +57,7 @@ export default {
 
     const logout = async () => {
       try {
-        await signOut(auth);
+        await authService.logout();
         router.push('/login');
       } catch (error) {
         console.error('Error logging out:', error);

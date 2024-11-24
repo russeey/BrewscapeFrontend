@@ -74,62 +74,67 @@
 </template>
 
 <script>
-import { auth } from "@/firebase.config";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import authService from '../services/authService';
 
 export default {
-  data() {
-    return {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phoneNumber: "",
-      password: "",
-      location: "",
-      birthday: "",
-      gender: "",
-      errorMessage: "",
-      loading: false,
-      coffeeLogo: "@/assets/logo.png",
-    };
-  },
-  methods: {
-    async handleSignup() {
-      this.loading = true;
+  name: 'SignupPage',
+  setup() {
+    const router = useRouter();
+    const firstName = ref('');
+    const lastName = ref('');
+    const email = ref('');
+    const phoneNumber = ref('');
+    const password = ref('');
+    const location = ref('');
+    const errorMessage = ref('');
+    const loading = ref(false);
+
+    const handleSignup = async () => {
+      loading.value = true;
+      errorMessage.value = '';
+      
       try {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          this.email,
-          this.password
+        await authService.signup(
+          email.value,
+          password.value,
+          firstName.value,
+          lastName.value,
+          phoneNumber.value,
+          location.value
         );
-        const user = userCredential.user;
-        console.log("User signed up:", user);
-        this.$router.push("/dashboard");
+        
+        router.push('/dashboard');
       } catch (error) {
-        console.error("Error during signup:", error);
-        if (error.code === "auth/email-already-in-use") {
-          this.errorMessage = "This email is already registered. Try logging in.";
-        } else if (error.code === "auth/invalid-email") {
-          this.errorMessage = "Please enter a valid email address.";
-        } else if (error.code === "auth/weak-password") {
-          this.errorMessage = "Password should be at least 6 characters long.";
-        } else {
-          this.errorMessage = "Signup failed. Please try again.";
-        }
+        errorMessage.value = error.message || 'An error occurred during signup';
       } finally {
-        this.loading = false;
+        loading.value = false;
       }
-    },
-    validatePhoneNumber() {
-      this.phoneNumber = this.phoneNumber.replace(/\D/g, '');
-    },
-  },
+    };
+
+    const validatePhoneNumber = () => {
+      phoneNumber.value = phoneNumber.value.replace(/[^0-9]/g, '');
+    };
+
+    return {
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      password,
+      location,
+      errorMessage,
+      loading,
+      handleSignup,
+      validatePhoneNumber
+    };
+  }
 };
 </script>
 
 <style scoped>
 </style>
-
 
 <style scoped>
 .signup-page {

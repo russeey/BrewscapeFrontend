@@ -58,140 +58,83 @@
 </template>
 
 <script>
-import { auth } from "@/firebase.config"; // Import Firebase auth
-import { signInWithEmailAndPassword } from "firebase/auth";
-import authService from "@/authService"; // Import the auth service
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import authService from '../services/authService';
 
 export default {
-  data() {
-    return {
-      email: "",
-      password: "",
-      errorMessage: "",
-      loading: false,
-      keepSignedIn: false,
-      failedAttempts: 0,
-      maxAttempts: 3,
-      timeoutMinutes: 5,
-      isLockedOut: false,
-      countdown: 30, // 30 seconds countdown
-      countdownInterval: null, // Interval ID for countdown
-    };
-  },
-  methods: {
-    async loginUser() {
-      const currentTimestamp = new Date().getTime();
-      const timeoutEndTimestamp = localStorage.getItem("timeoutEndTimestamp");
+  name: 'LoginPage',
+  setup() {
+    const router = useRouter();
+    const email = ref('');
+    const password = ref('');
+    const keepSignedIn = ref(false);
+    const loading = ref(false);
+    const errorMessage = ref('');
+    const loginAttempts = ref(0);
+    const isLockedOut = ref(false);
+    const countdown = ref(0);
+    let countdownTimer = null;
 
-      // Check if timeout period is active
-      if (timeoutEndTimestamp && currentTimestamp < timeoutEndTimestamp) {
-        this.startCountdown();
-        return;
-      }
-
-      this.loading = true; // Show loading state
-      try {
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          this.email,
-          this.password
-        );
-        const user = userCredential.user;
-
-        // Set authentication status in authService
-        authService.isAuthenticated = true;
-
-        // Reset failed attempts on successful login
-        this.failedAttempts = 0;
-        localStorage.removeItem("failedAttempts");
-        localStorage.removeItem("timeoutEndTimestamp");
-
-        // Save user to localStorage if 'Keep me signed in' is checked
-        if (this.keepSignedIn) {
-          localStorage.setItem("loggedInUserId", user.uid);
-          localStorage.setItem("email", this.email);
-        }
-
-        this.$router.push("/dashboard");
-      } catch (error) {
-        console.error("Login error:", error);
-        this.handleLoginError(error);
-      } finally {
-        this.loading = false; 
-      }
-    },
-    handleLoginError(error) {
+    const loginUser = async () => {
+      if (isLockedOut.value) return;
       
-      if (error.code === "auth/invalid-email") {
-        this.errorMessage = "Invalid email format.";
-      } else if (error.code === "auth/user-not-found") {
-        this.errorMessage = "No user found with this email.";
-      } else if (error.code === "auth/wrong-password") {
-        this.errorMessage = "Incorrect password. Please try again.";
-      } else {
-        this.errorMessage = "Invalid Username or Password.";
+      loading.value = true;
+      errorMessage.value = '';
+      
+      try {
+        await authService.login(email.value, password.value, keepSignedIn.value);
+        router.push('/dashboard');
+      } catch (error) {
+        handleLoginError(error);
+      } finally {
+        loading.value = false;
       }
+    };
 
-      // Increment failed attempts
-      this.failedAttempts += 1;
-      localStorage.setItem("failedAttempts", this.failedAttempts);
-
-      if (this.failedAttempts >= this.maxAttempts) {
-        const timeoutEndTimestamp = new Date().getTime() + 30 * 1000;
-        localStorage.setItem("timeoutEndTimestamp", timeoutEndTimestamp);
-        this.isLockedOut = true;
-        this.startCountdown(); // Start countdown when locked out
-        this.errorMessage = "Too many failed attempts.";
+    const handleLoginError = (error) => {
+      loginAttempts.value++;
+      
+      if (loginAttempts.value >= 3) {
+        isLockedOut.value = true;
+        startCountdown();
       }
-    },
-    startCountdown() {
-      // Calculate remaining time if returning within timeout
-      const timeoutEndTimestamp = localStorage.getItem("timeoutEndTimestamp");
-      if (timeoutEndTimestamp) {
-        const remainingTime = Math.ceil(
-          (timeoutEndTimestamp - new Date().getTime()) / 1000
-        );
-        this.countdown = remainingTime > 0 ? remainingTime : 0;
-      }
+      
+      errorMessage.value = error.message || 'An error occurred during login';
+    };
 
-      if (this.countdownInterval) clearInterval(this.countdownInterval);
-
-      this.countdownInterval = setInterval(() => {
-        if (this.countdown > 0) {
-          this.countdown -= 1;
-        } else {
-          this.resetLockout();
+    const startCountdown = () => {
+      countdown.value = 30;
+      countdownTimer = setInterval(() => {
+        countdown.value--;
+        if (countdown.value <= 0) {
+          resetLockout();
         }
       }, 1000);
-    },
-    resetLockout() {
-      this.isLockedOut = false;
-      this.countdown = 30;
-      clearInterval(this.countdownInterval);
-      localStorage.removeItem("timeoutEndTimestamp");
-      localStorage.removeItem("failedAttempts");
+    };
 
-      this.errorMessage = "";
-    },
-  },
+    const resetLockout = () => {
+      clearInterval(countdownTimer);
+      isLockedOut.value = false;
+      loginAttempts.value = 0;
+      countdown.value = 0;
+    };
 
-  created() {
-    const storedAttempts = localStorage.getItem("failedAttempts");
-    this.failedAttempts = storedAttempts ? parseInt(storedAttempts) : 0;
-
-
-    const timeoutEndTimestamp = localStorage.getItem("timeoutEndTimestamp");
-    if (timeoutEndTimestamp && new Date().getTime() < timeoutEndTimestamp) {
-      this.isLockedOut = true;
-      this.startCountdown();
-    }
-  },
-  beforeDestroy() {
-
-    if (this.countdownInterval) clearInterval(this.countdownInterval);
-  },
+    return {
+      email,
+      password,
+      keepSignedIn,
+      loading,
+      errorMessage,
+      isLockedOut,
+      countdown,
+      loginUser,
+      handleLoginError
+    };
+  }
 };
 </script>
+
 <style scoped>
 .login-page {
   background-image: url(https://image.slidesdocs.com/responsive-images/background/coffee-culture-illustration-powerpoint-background_e224109f77__960_540.jpg);
