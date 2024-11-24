@@ -1,13 +1,11 @@
 <template>
   <div v-if="isAuthenticated" class="dashboard">
-    <nav class="navbar">
-      <div class="nav-brand">BrewScape</div>
-      <div class="nav-links">
-        <button class="nav-btn" @click="goToCart">Cart</button>
-        <button class="nav-btn" @click="goToProfile">Profile</button>
-        <button class="nav-btn logout" @click="logout">Logout</button>
-      </div>
-    </nav>
+    <header-component
+      @go-to-cart="goToCart"
+      @go-to-profile="goToProfile"
+      @logout="logout"
+      class="header-margin"
+    />
 
     <promo-component
       :message="promoMessage"
@@ -59,6 +57,7 @@ import PromoComponent from './PromoComponent.vue';
 import SearchBarComponent from './SearchBarComponent.vue';
 import ShopInfoComponent from './ShopInfoComponent.vue';
 import MenuComponent from './MenuComponent.vue';
+import HeaderComponent from './HeaderComponent.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -68,7 +67,8 @@ export default {
     PromoComponent,
     SearchBarComponent,
     ShopInfoComponent,
-    MenuComponent
+    MenuComponent,
+    HeaderComponent
   },
   setup() {
     const router = useRouter();
@@ -93,37 +93,32 @@ export default {
 
     onMounted(() => {
       isAuthenticated.value = authService.isAuthenticated();
+      if (!isAuthenticated.value) {
+        router.push('/login');
+        return;
+      }
       const savedRating = localStorage.getItem('brewscapeRating');
       if (savedRating) {
         currentRating.value = parseInt(savedRating);
       }
-
-      // Add auth state listener
-      authService.addAuthStateListener((user) => {
-        isAuthenticated.value = !!user;
-      });
     });
 
-    const goToProfile = () => {
-      router.push("/profile");
+    const goToCart = () => {
+      router.push('/cart');
     };
 
-    const goToCart = () => {
-      router.push("/cart");
+    const goToProfile = () => {
+      router.push('/profile');
+    };
+
+    const logout = () => {
+      authService.logout();
+      router.push('/');
     };
 
     const setRating = (rating) => {
       currentRating.value = rating;
       localStorage.setItem('brewscapeRating', rating.toString());
-    };
-
-    const logout = async () => {
-      try {
-        await authService.signOut();
-        router.push('/login');
-      } catch (error) {
-        console.error('Error signing out:', error);
-      }
     };
 
     return {
@@ -135,10 +130,10 @@ export default {
       secondPromoMessage,
       discount,
       currentRating,
-      goToProfile,
       goToCart,
-      setRating,
-      logout
+      goToProfile,
+      logout,
+      setRating
     };
   }
 };
@@ -152,49 +147,8 @@ export default {
   min-height: 100vh;
 }
 
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 25px;
-  background-color: #4d2c16;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.nav-brand {
-  font-size: 24px;
-  font-weight: bold;
-  color: white;
-}
-
-.nav-links {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
-
-.nav-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  background-color: transparent;
-  color: white;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
-}
-
-.nav-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-btn.logout {
-  background-color: #bd8e50;
-}
-
-.nav-btn.logout:hover {
-  background-color: #a67b43;
+.header-margin {
+  margin-bottom: 30px;
 }
 
 .menu-section {
@@ -206,8 +160,8 @@ export default {
 }
 
 .menu-container {
-  flex: 2;
   display: flex;
+  flex: 2;
   flex-direction: column;
   min-width: 600px;
   height: fit-content;
@@ -231,18 +185,6 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-    gap: 15px;
-    padding: 15px;
-  }
-
-  .nav-links {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
   .menu-section {
     flex-direction: column;
   }

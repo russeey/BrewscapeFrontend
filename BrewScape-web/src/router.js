@@ -49,23 +49,16 @@ const router = createRouter({
   ],
 });
 
-// Navigation guard
 router.beforeEach((to, from, next) => {
   const isAuthenticated = authService.isAuthenticated();
 
-  // Handle routes that require authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login');
-    return;
-  }
-
-  // Handle routes that require guest access (like login page)
-  if (to.meta.requiresGuest && isAuthenticated) {
+  } else if (to.meta.requiresGuest && isAuthenticated) {
     next('/dashboard');
-    return;
+  } else {
+    next();
   }
-
-  next();
 });
 
 export default router;

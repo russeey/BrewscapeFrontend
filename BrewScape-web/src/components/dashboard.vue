@@ -102,7 +102,6 @@
   </div>
 </template>
 
-
 <script>
 import authService from "@/authService";
 
@@ -157,20 +156,22 @@ export default {
     }
   },
   methods: {
-    goToProfile() {
-      this.$router.push("/profile");
-    },
-    goToCart() {
-      this.$router.push("/cart");
-    },
-    setRating(rating) {
+  goToProfile() {
+    this.$router.push("/profile");
+  },
+  goToCart() {
+    this.$router.push("/cart");
+  },
+  setRating(rating) {
       this.currentRating = rating;
-      // Save the rating to localStorage
       localStorage.setItem('brewscapeRating', rating);
     },
     logout() {
       localStorage.removeItem("loggedInUserId");
-      this.$router.push("/login");
+      localStorage.removeItem("userProfile");
+      localStorage.removeItem("cartItems");
+      localStorage.removeItem("brewscapeRating");
+      this.$router.push("/");
     },
     isHighlighted(itemName) {
       return itemName.toLowerCase().includes(this.searchTerm.toLowerCase());
@@ -179,10 +180,7 @@ export default {
 };
 </script>
 
-
-
-
-  <style scoped>
+<style scoped>
   /* General Layout */
   body {
     font-family: 'Roboto', sans-serif;
@@ -423,4 +421,19 @@ export default {
   .star.filled {
     color: #fbc02d; 
   }
-  </style>
+
+  .add-to-cart-btn {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .add-to-cart-btn:hover {
+    background-color: #45a049;
+  }
+</style>

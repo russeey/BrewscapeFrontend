@@ -18,20 +18,37 @@
     <section class="cart-content">
       <h2>Order</h2>
       <div class="order-header">
-        <span>ORDER</span>
-        <span>QUANTITY</span>
-        <span>PRICE</span>
+        <div class="column">
+          <span>ORDER</span>
+        </div>
+        <div class="column quantity-column">
+          <span>QUANTITY</span>
+        </div>
+        <div class="column">
+          <span>PRICE</span>
+        </div>
       </div>
       <ul v-if="cartItems.length > 0" class="order-list">
         <li v-for="(item, index) in cartItems" :key="index" class="order-item">
-          <span>{{ item.name }}</span>
-          <span>{{ item.quantity }}</span>
-          <span>{{ item.price }}₱</span>
+          <div class="column">
+            <span class="item-name">{{ item.name }}</span>
+          </div>
+          <div class="column quantity-column">
+            <div class="quantity-controls">
+              <button class="quantity-btn" @click="decreaseQuantity(index)">-</button>
+              <span class="quantity-value">{{ item.quantity }}</span>
+              <button class="quantity-btn" @click="increaseQuantity(index)">+</button>
+              <button class="remove-btn" @click="removeItem(index)">Remove</button>
+            </div>
+          </div>
+          <div class="column">
+            <span class="item-price">{{ item.price }}₱</span>
+          </div>
         </li>
       </ul>
       <div v-if="cartItems.length > 0" class="total-section">
         <span>Total</span>
-        <span>{{ calculateTotal() }}₱</span>
+        <span>{{ cartTotal }}₱</span>
       </div>
       <button v-if="cartItems.length > 0" class="payment-button" @click="openPaymentOptions">Review your payment method</button>
       <p v-else>Your cart is currently empty.</p>
@@ -104,30 +121,60 @@ import authService from "@/authService";
 
 export default {
   data() {
-    return {
-      isAuthenticated: false,
-      cartItems: [
-        { name: 'Iced Cappuccino', quantity: 1, price: 120 },
-        { name: 'Caramel Macchiato', quantity: 2, price: 150 }
-      ],
-      showPaymentModal: false,
-      selectedPayment: null,
-      gcashDetails: {
-        name: "",
-        number: "",
-        pin: "",
-        amount: ""
-      }
-    };
+  return {
+    isAuthenticated: false,
+    cartItems: [],
+    showPaymentModal: false,
+    selectedPayment: null,
+    gcashDetails: {
+      name: "",
+      number: "",
+      pin: "",
+      amount: ""
+    },
+    showSuccessMessage: false,
+    successMessage: ''
+  };
+},
+  computed: {
+    cartTotal() {
+      return this.cartItems.reduce((total, item) => {
+        return total + (item.price * item.quantity);
+      }, 0);
+    }
   },
   created() {
     this.isAuthenticated = authService.isAuthenticated;
 
     if (!this.isAuthenticated) {
       this.$router.push("/login");
+    } else {
+      // Load cart items from localStorage
+      this.loadCartItems();
     }
   },
   methods: {
+    loadCartItems() {
+      const items = localStorage.getItem('cartItems');
+      this.cartItems = items ? JSON.parse(items) : [];
+    },
+    increaseQuantity(index) {
+      this.cartItems[index].quantity += 1;
+      this.updateLocalStorage();
+    },
+    decreaseQuantity(index) {
+      if (this.cartItems[index].quantity > 1) {
+        this.cartItems[index].quantity -= 1;
+        this.updateLocalStorage();
+      }
+    },
+    removeItem(index) {
+      this.cartItems.splice(index, 1);
+      this.updateLocalStorage();
+    },
+    updateLocalStorage() {
+      localStorage.setItem('cartItems', JSON.stringify(this.cartItems));
+    },
     validateGcashNumber() {
       // Remove any non-numeric characters from the input
       this.gcashDetails.number = this.gcashDetails.number.replace(/[^0-9]/g, '');
@@ -150,9 +197,6 @@ export default {
       localStorage.removeItem("loggedInUserId");
       this.$router.push("/login");
     },
-    calculateTotal() {
-      return this.cartItems.reduce((total, item) => total + item.quantity * item.price, 0);
-    },
     openPaymentOptions() {
       this.showPaymentModal = true;
     },
@@ -162,14 +206,67 @@ export default {
     selectPayment(method) {
       this.selectedPayment = method;
       if (method === "Gcash") {
-        this.gcashDetails.amount = this.calculateTotal();
+        this.gcashDetails.amount = this.cartTotal;
       }
       this.showPaymentModal = false;
     },
-    submitGcashPayment() {
-      alert(`Payment Successful!\nName: ${this.gcashDetails.name}\nNumber: ${this.gcashDetails.number}\nAmount: ${this.gcashDetails.amount}₱\nPIN: ${this.gcashDetails.pin}`);
-      this.gcashDetails = { name: "", number: "", pin: "", amount: "" }; // Reset form
-      this.selectedPayment = null; // Hide form
+    async saveOrderToHistory() {
+      try {
+        // Get user info from localStorage
+        const userProfile = JSON.parse(localStorage.getItem('userProfile'));
+        if (!userProfile || !userProfile.email) {
+          console.error('User profile not found');
+          return;
+        }
+
+        const order = {
+          items: this.cartItems.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          total: this.cartTotal,
+          date: new Date().toISOString()
+        };
+
+        // Get existing orders
+        let allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
+        if (!allOrders[userProfile.email]) {
+          allOrders[userProfile.email] = [];
+        }
+
+        // Add new order
+        allOrders[userProfile.email].push(order);
+
+        // Save updated orders
+        localStorage.setItem('allOrders', JSON.stringify(allOrders));
+        console.log('Order saved successfully for user:', userProfile.email);
+      } catch (error) {
+        console.error('Error saving order:', error);
+      }
+    },
+
+    async submitGcashPayment() {
+      if (this.cartItems.length === 0) {
+        alert('Your cart is empty!');
+        return;
+      }
+
+      try {
+        await this.saveOrderToHistory();
+        this.clearCart();
+        alert('Payment Successful! Your order has been recorded.');
+        this.gcashDetails = { name: "", number: "", pin: "", amount: "" };
+        this.selectedPayment = null;
+        this.$router.push('/profile');
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        alert('There was an error processing your payment. Please try again.');
+      }
+    },
+    clearCart() {
+      this.cartItems = [];
+      localStorage.removeItem('cartItems');
     },
     cancelPayment() {
       this.selectedPayment = null; // Reset the selected payment method
@@ -236,8 +333,8 @@ export default {
 
 .cart-content {
   margin-top: 40px;
-  background-color: #f3cea2;
   padding: 20px;
+  background-color: #f3cea2;
   border-radius: 12px;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -251,15 +348,89 @@ export default {
 
 .order-header,
 .order-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  font-size: 18px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 20px;
+  padding: 10px 20px;
+  align-items: center;
   border-bottom: 1px solid #e0e0e0;
 }
 
 .order-header {
   font-weight: bold;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  width: 100%;
+}
+
+.quantity-value {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 500;
+  margin: 0 4px;
+}
+
+.quantity-btn {
+  background-color: #4b2d1f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.remove-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.remove-btn:hover {
+  background-color: #c0392b;
+}
+
+.quantity-btn:hover {
+  opacity: 0.9;
+}
+
+.column {
+  display: flex;
+  align-items: center;
+}
+
+.quantity-column {
+  justify-content: flex-start;
+  position: relative;
+}
+
+.column:last-child {
+  justify-content: flex-end;
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.item-price {
+  font-weight: 500;
 }
 
 .total-section {
