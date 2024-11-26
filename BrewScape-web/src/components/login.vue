@@ -100,7 +100,10 @@ export default {
         startCountdown();
       }
       
-      errorMessage.value = error.message || 'An error occurred during login';
+      // Replace Firebase error with a generic message
+      errorMessage.value = error.code === 'auth/invalid-credential' 
+        ? 'Incorrect username or password' 
+        : 'An error occurred during login';
     };
 
     const startCountdown = () => {
