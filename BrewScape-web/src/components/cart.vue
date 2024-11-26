@@ -1,141 +1,212 @@
 <template>
-  <div v-if="isAuthenticated" class="cart-page dashboard-container">
-    <nav class="navbar">
-      <div class="nav-brand">BrewScape</div>
-      <div class="nav-links">
-        <button class="nav-btn" @click="goToDashboard">
-          <i class="fas fa-home"></i> Dashboard
-        </button>
-        <button class="nav-btn" @click="goToProfile">
-          <i class="fas fa-user"></i> Profile
-        </button>
-        <button class="nav-btn logout" @click="logout">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-      </div>
-    </nav>
-
-    <section class="cart-content">
-      <h2>Order</h2>
-      <div class="order-header">
-        <div class="column">
-          <span>ORDER</span>
-        </div>
-        <div class="column quantity-column">
-          <span>QUANTITY</span>
-        </div>
-        <div class="column">
-          <span>PRICE</span>
-        </div>
-      </div>
-      <ul v-if="cartItems.length > 0" class="order-list">
-        <li v-for="(item, index) in cartItems" :key="index" class="order-item">
-          <div class="column">
-            <span class="item-name">{{ item.name }}</span>
+  <div>
+    <div v-if="isAuthenticated" class="cart-container">
+      <div class="cart-page dashboard-container">
+        <nav class="navbar">
+          <div class="nav-brand">BrewScape</div>
+          <div class="nav-links">
+            <button class="nav-btn" @click="goToDashboard">
+              <i class="fas fa-home"></i> Dashboard
+            </button>
+            <button class="nav-btn" @click="goToProfile">
+              <i class="fas fa-user"></i> Profile
+            </button>
+            <button class="nav-btn logout" @click="logout">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
           </div>
-          <div class="column quantity-column">
-            <div class="quantity-controls">
-              <button class="quantity-btn" @click="decreaseQuantity(index)">-</button>
-              <span class="quantity-value">{{ item.quantity }}</span>
-              <button class="quantity-btn" @click="increaseQuantity(index)">+</button>
-              <button class="remove-btn" @click="removeItem(index)">Remove</button>
+        </nav>
+
+        <section class="cart-content">
+          <h2>Order</h2>
+          <div class="order-header">
+            <div class="column">
+              <span>ORDER</span>
+            </div>
+            <div class="column quantity-column">
+              <span>QUANTITY</span>
+            </div>
+            <div class="column">
+              <span>PRICE</span>
             </div>
           </div>
-          <div class="column">
-            <span class="item-price">{{ item.price }}₱</span>
+          <ul v-if="cartItems.length > 0" class="order-list">
+            <li v-for="(item, index) in cartItems" :key="index" class="order-item">
+              <div class="column">
+                <span class="item-name">{{ item.name }}</span>
+              </div>
+              <div class="column quantity-column">
+                <div class="quantity-controls">
+                  <button class="quantity-btn" @click="decreaseQuantity(index)">-</button>
+                  <span class="quantity-value">{{ item.quantity }}</span>
+                  <button class="quantity-btn" @click="increaseQuantity(index)">+</button>
+                  <button class="remove-btn" @click="removeItem(index)">Remove</button>
+                </div>
+              </div>
+              <div class="column">
+                <span class="item-price">{{ item.price }}₱</span>
+              </div>
+            </li>
+          </ul>
+          <div v-if="cartItems.length > 0" class="total-section">
+            <span>Total</span>
+            <span>{{ cartTotal }}₱</span>
           </div>
-        </li>
-      </ul>
-      <div v-if="cartItems.length > 0" class="total-section">
-        <span>Total</span>
-        <span>{{ cartTotal }}₱</span>
-      </div>
-      <button v-if="cartItems.length > 0" class="payment-button" @click="openPaymentOptions">Review your payment method</button>
-      <p v-else>Your cart is currently empty.</p>
+          <button v-if="cartItems.length > 0" class="payment-button" @click="openPaymentOptions">Review your payment method</button>
+          <p v-else>Your cart is currently empty.</p>
 
-      <!-- Gcash Payment Form -->
-      <div v-if="selectedPayment === 'Gcash'" class="gcash-form">
-        <h3>Gcash Payment</h3>
-        <form @submit.prevent="submitGcashPayment">
-          <div>
-            <label for="gcash-name">Name</label>
-            <input type="text" id="gcash-name" v-model="gcashDetails.name" required />
-          </div>
-          <div>
-            <label for="gcash-number">Gcash Number</label>
-            <input 
-              type="text" 
-              id="gcash-number" 
-              v-model="gcashDetails.number" 
-              required 
-              pattern="\d*" 
-              @input="validateGcashNumber" 
-              title="Only numbers are allowed" />
-          </div>
+          <!-- Gcash Payment Form -->
+          <div v-if="selectedPayment === 'Gcash'" class="gcash-form">
+            <h3>Gcash Payment</h3>
+            <form @submit.prevent="submitGcashPayment">
+              <div>
+                <label for="gcash-name">Name</label>
+                <input type="text" id="gcash-name" v-model="gcashDetails.name" required />
+              </div>
+              <div>
+                <label for="gcash-number">Gcash Number</label>
+                <input 
+                  type="text" 
+                  id="gcash-number" 
+                  v-model="gcashDetails.number" 
+                  required 
+                  pattern="\d*" 
+                  @input="validateGcashNumber" 
+                  title="Only numbers are allowed" />
+              </div>
 
-          <div>
-            <label for="gcash-pin">Gcash PIN</label>
-            <input 
-              type="password" 
-              id="gcash-pin" 
-              v-model="gcashDetails.pin" 
-              required 
-              pattern="\d{4}" 
-              maxlength="4" 
-              title="Please enter a 4-digit PIN" 
-              @input="validateGcashPin" 
-            />
+              <div>
+                <label for="gcash-pin">Gcash PIN</label>
+                <input 
+                  type="password" 
+                  id="gcash-pin" 
+                  v-model="gcashDetails.pin" 
+                  required 
+                  pattern="\d{4}" 
+                  maxlength="4" 
+                  title="Please enter a 4-digit PIN" 
+                  @input="validateGcashPin" 
+                />
+              </div>
+              <div>
+                <label for="gcash-amount">Amount</label>
+                <input type="text" id="gcash-amount" v-model="gcashDetails.amount" readonly />
+              </div>
+              <button type="submit" class="submit-payment-button">Submit Payment</button>
+            </form>
+            <!-- Cancel Button to go back to the cart -->
+            <button class="cancel-payment-button" @click="cancelPayment">Cancel</button>
           </div>
-          <div>
-            <label for="gcash-amount">Amount</label>
-            <input type="text" id="gcash-amount" v-model="gcashDetails.amount" readonly />
-          </div>
-          <button type="submit" class="submit-payment-button">Submit Payment</button>
-        </form>
-        <!-- Cancel Button to go back to the cart -->
-        <button class="cancel-payment-button" @click="cancelPayment">Cancel</button>
-      </div>
-    </section>
+        </section>
 
-    <!-- Payment Modal -->
-    <div v-if="showPaymentModal" class="payment-modal">
-      <div class="modal-content">
-        <h3>Choose Your Payment Method</h3>
-        <div class="payment-options">
-          <button class="payment-option" @click="selectPayment('Gcash')">Gcash Payment</button>
-          <button class="payment-option" @click="selectPayment('Cash on Delivery')">Cash on Delivery</button>
+        <!-- Payment Modal -->
+        <div v-if="showPaymentModal" class="payment-modal">
+          <div class="modal-content">
+            <h3>Choose Your Payment Method</h3>
+            <div class="payment-options">
+              <button class="payment-option" @click="selectPayment('Gcash')">Gcash Payment</button>
+              <button class="payment-option" @click="selectPayment('Cash on Delivery')">Cash on Delivery</button>
+            </div>
+            <button class="close-button" @click="closePaymentModal">Cancel</button>
+          </div>
         </div>
-        <button class="close-button" @click="closePaymentModal">Cancel</button>
       </div>
-    </div>
-  </div>
 
-  <div v-else>
-    <h1>You are not authorized to view this page.</h1>
-    <router-link to="/login">Go to Login</router-link>
+      <!-- Notification -->
+      <transition name="fade">
+        <div v-if="showNotification" class="notification">
+          {{ notificationMessage }}
+        </div>
+      </transition>
+    </div>
+
+    <div v-else>
+      <h1>You are not authorized to view this page.</h1>
+      <router-link to="/login">Go to Login</router-link>
+    </div>
+
+    <!-- Cash on Delivery Payment Form -->
+    <div v-if="selectedPayment === 'Cash on Delivery'" class="gcash-form">
+      <h3>Cash on Delivery Details</h3>
+      <form @submit.prevent="submitCashOnDeliveryPayment">
+        <div>
+          <label for="cod-name">Name</label>
+          <input 
+            type="text" 
+            id="cod-name" 
+            v-model="codDetails.fullName" 
+            required
+            placeholder="Enter your full name"
+          />
+        </div>
+        <div>
+          <label for="cod-contact">Contact Number</label>
+          <input 
+            type="tel" 
+            id="cod-contact" 
+            v-model="codDetails.contactNumber" 
+            required
+            placeholder="Enter your contact number"
+            pattern="\d*"
+            @input="validateContactNumber"
+            title="Only numbers are allowed"
+          />
+        </div>
+        <div>
+          <label for="cod-address">Delivery Address</label>
+          <textarea 
+            id="cod-address" 
+            v-model="codDetails.address" 
+            required
+            placeholder="Enter your complete delivery address"
+          ></textarea>
+        </div>
+        <div>
+          <label for="cod-amount">Amount</label>
+          <input 
+            type="text" 
+            id="cod-amount" 
+            v-model="codDetails.amount" 
+            :placeholder="`Total Amount: ₱${cartTotal}`"
+            readonly
+          />
+        </div>
+        <button type="submit" class="submit-payment-button">Submit Payment</button>
+      </form>
+      <button class="cancel-payment-button" @click="cancelPayment">Cancel</button>
+    </div>
   </div>
 </template>
 
 <script>
-import authService from "@/authService";
+import authService from "@/services/authService";
 
 export default {
   data() {
-  return {
-    isAuthenticated: false,
-    cartItems: [],
-    showPaymentModal: false,
-    selectedPayment: null,
-    gcashDetails: {
-      name: "",
-      number: "",
-      pin: "",
-      amount: ""
-    },
-    showSuccessMessage: false,
-    successMessage: ''
-  };
-},
+    return {
+      isAuthenticated: false,
+      cartItems: [],
+      showPaymentModal: false,
+      selectedPayment: null,
+      gcashDetails: {
+        name: "",
+        number: "",
+        pin: "",
+        amount: ""
+      },
+      codDetails: {
+        fullName: "",
+        contactNumber: "",
+        address: "",
+        amount: ""
+      },
+      showSuccessMessage: false,
+      successMessage: '',
+      showNotification: false,
+      notificationMessage: '',
+      notificationTimeout: null
+    };
+  },
   computed: {
     cartTotal() {
       return this.cartItems.reduce((total, item) => {
@@ -144,49 +215,199 @@ export default {
     }
   },
   created() {
-    this.isAuthenticated = authService.isAuthenticated;
-
+    this.isAuthenticated = authService.isAuthenticated();
     if (!this.isAuthenticated) {
-      this.$router.push("/login");
-    } else {
-      // Load cart items from localStorage
-      this.loadCartItems();
+      this.$router.push('/login');
+      return;
     }
+    // Load cart items for current user
+    this.loadCartItems();
   },
   methods: {
     loadCartItems() {
-      const items = localStorage.getItem('cartItems');
-      this.cartItems = items ? JSON.parse(items) : [];
-    },
-    increaseQuantity(index) {
-      this.cartItems[index].quantity += 1;
-      this.updateLocalStorage();
-    },
-    decreaseQuantity(index) {
-      if (this.cartItems[index].quantity > 1) {
-        this.cartItems[index].quantity -= 1;
-        this.updateLocalStorage();
+      try {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || !currentUser.email) {
+          console.warn('No authenticated user found');
+          this.cartItems = [];
+          return;
+        }
+
+        // Get all carts from localStorage
+        const allCarts = JSON.parse(localStorage.getItem('userCarts')) || {};
+        
+        // Get cart for current user
+        this.cartItems = allCarts[currentUser.email] || [];
+      } catch (error) {
+        console.error('Error loading cart:', error);
+        this.cartItems = [];
       }
     },
+
+    saveCartItems() {
+      try {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || !currentUser.email) {
+          console.warn('No authenticated user found');
+          return;
+        }
+
+        // Get all carts
+        const allCarts = JSON.parse(localStorage.getItem('userCarts')) || {};
+        
+        // Update cart for current user
+        allCarts[currentUser.email] = this.cartItems;
+        
+        // Save back to localStorage
+        localStorage.setItem('userCarts', JSON.stringify(allCarts));
+      } catch (error) {
+        console.error('Error saving cart:', error);
+      }
+    },
+
+    increaseQuantity(index) {
+      try {
+        this.cartItems[index].quantity += 1;
+        this.saveCartItems();
+        this.showNotificationMessage('Quantity increased');
+      } catch (error) {
+        console.error('Error increasing quantity:', error);
+        this.showNotificationMessage('Error updating quantity');
+      }
+    },
+
+    decreaseQuantity(index) {
+      try {
+        if (this.cartItems[index].quantity > 1) {
+          this.cartItems[index].quantity -= 1;
+          this.saveCartItems();
+          this.showNotificationMessage('Quantity decreased');
+        } else {
+          this.removeItem(index);
+        }
+      } catch (error) {
+        console.error('Error decreasing quantity:', error);
+        this.showNotificationMessage('Error updating quantity');
+      }
+    },
+
     removeItem(index) {
-      this.cartItems.splice(index, 1);
-      this.updateLocalStorage();
+      try {
+        this.cartItems.splice(index, 1);
+        this.saveCartItems();
+        this.showNotificationMessage('Item removed from cart');
+      } catch (error) {
+        console.error('Error removing item:', error);
+        this.showNotificationMessage('Error removing item');
+      }
     },
-    updateLocalStorage() {
-      localStorage.setItem('cartItems', JSON.stringify(this.cartItems));
+
+    clearCart() {
+      try {
+        this.cartItems = [];
+        const currentUser = authService.getCurrentUser();
+        if (currentUser && currentUser.email) {
+          const allCarts = JSON.parse(localStorage.getItem('userCarts')) || {};
+          delete allCarts[currentUser.email];
+          localStorage.setItem('userCarts', JSON.stringify(allCarts));
+        }
+        this.showNotificationMessage('Cart cleared');
+      } catch (error) {
+        console.error('Error clearing cart:', error);
+        this.showNotificationMessage('Error clearing cart');
+      }
     },
+
+    addToCart(item) {
+      const existingItem = this.cartItems.find(cartItem => cartItem.name === item.name);
+      if (existingItem) {
+        existingItem.quantity++;
+      } else {
+        this.cartItems.push({
+          name: item.name,
+          price: item.price,
+          quantity: 1
+        });
+      }
+      this.saveCartItems();
+    },
+
     validateGcashNumber() {
       // Remove any non-numeric characters from the input
       this.gcashDetails.number = this.gcashDetails.number.replace(/[^0-9]/g, '');
     },
+    async submitGcashPayment() {
+      try {
+        // Validate cart
+        if (this.cartItems.length === 0) {
+          this.showNotificationMessage('Your cart is empty');
+          return;
+        }
 
-    validateGcashPin() {
-      this.gcashDetails.pin = this.gcashDetails.pin.replace(/[^0-9]/g, ''); // Remove non-numeric characters
-      if (this.gcashDetails.pin.length > 4) {
-        this.gcashDetails.pin = this.gcashDetails.pin.substring(0, 4); // Limit to 4 digits
+        // Process GCash payment
+        await this.saveOrderToHistory();
+        this.clearCart();
+        this.showPaymentModal = false;
+        this.selectedPayment = null;
+        this.showNotificationMessage('Payment successful! Thank you for your order.');
+        
+        // Reset GCash form
+        this.gcashDetails = { 
+          name: "", 
+          number: "", 
+          pin: "", 
+          amount: "" 
+        };
+        
+        // Redirect to profile after a short delay
+        setTimeout(() => {
+          this.$router.push('/profile');
+        }, 2000);
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        this.showNotificationMessage('Error processing payment. Please try again.');
       }
     },
-  
+    async submitCashOnDeliveryPayment() {
+      try {
+        // Validate cart
+        if (this.cartItems.length === 0) {
+          this.showNotificationMessage('Your cart is empty');
+          return;
+        }
+
+        // Validate form fields
+        if (!this.codDetails.fullName || !this.codDetails.contactNumber || !this.codDetails.address) {
+          this.showNotificationMessage('Please fill in all required fields');
+          return;
+        }
+
+        // Process order and save to history
+        await this.saveOrderToHistory();
+        this.clearCart();
+        this.showPaymentModal = false;
+        this.selectedPayment = null;
+        
+        // Show success notification
+        this.showNotificationMessage('Order placed successfully! We will deliver your order soon.');
+        
+        // Reset COD form
+        this.codDetails = {
+          fullName: "",
+          contactNumber: "",
+          address: "",
+          amount: ""
+        };
+
+        // Redirect to profile after a short delay
+        setTimeout(() => {
+          this.$router.push('/profile');
+        }, 2000);
+      } catch (error) {
+        console.error('Error processing Cash on Delivery order:', error);
+        this.showNotificationMessage('Error processing order. Please try again.');
+      }
+    },
     goToDashboard() {
       this.$router.push("/dashboard");
     },
@@ -207,16 +428,17 @@ export default {
       this.selectedPayment = method;
       if (method === "Gcash") {
         this.gcashDetails.amount = this.cartTotal;
+        this.showPaymentModal = false;
+      } else if (method === "Cash on Delivery") {
+        this.codDetails.amount = this.cartTotal;
+        this.showPaymentModal = false;
       }
-      this.showPaymentModal = false;
     },
     async saveOrderToHistory() {
       try {
-        // Get user info from localStorage
-        const userProfile = JSON.parse(localStorage.getItem('userProfile'));
-        if (!userProfile || !userProfile.email) {
-          console.error('User profile not found');
-          return;
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || !currentUser.email) {
+          throw new Error('No authenticated user found');
         }
 
         const order = {
@@ -226,52 +448,91 @@ export default {
             price: item.price
           })),
           total: this.cartTotal,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          paymentMethod: this.selectedPayment,
+          paymentDetails: this.selectedPayment === 'Gcash' 
+            ? {
+                name: this.gcashDetails.name,
+                number: this.gcashDetails.number,
+                amount: this.gcashDetails.amount
+              }
+            : this.selectedPayment === 'Cash on Delivery'
+            ? {
+                fullName: this.codDetails.fullName,
+                contactNumber: this.codDetails.contactNumber,
+                address: this.codDetails.address,
+                amount: this.codDetails.amount
+              }
+            : null
         };
 
-        // Get existing orders
-        let allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
-        if (!allOrders[userProfile.email]) {
-          allOrders[userProfile.email] = [];
+        // Get existing orders or initialize empty object
+        const allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
+        
+        // Initialize array for this user if it doesn't exist
+        if (!allOrders[currentUser.email]) {
+          allOrders[currentUser.email] = [];
         }
 
-        // Add new order
-        allOrders[userProfile.email].push(order);
-
-        // Save updated orders
+        // Add new order to the beginning of the array
+        allOrders[currentUser.email].unshift(order);
+        
+        // Save back to localStorage
         localStorage.setItem('allOrders', JSON.stringify(allOrders));
-        console.log('Order saved successfully for user:', userProfile.email);
+        
+        // Trigger storage event for real-time updates
+        window.dispatchEvent(new Event('storage'));
+        
+        console.log('Order saved successfully for user:', currentUser.email);
       } catch (error) {
         console.error('Error saving order:', error);
+        throw error;
       }
     },
-
-    async submitGcashPayment() {
-      if (this.cartItems.length === 0) {
-        alert('Your cart is empty!');
-        return;
-      }
-
-      try {
-        await this.saveOrderToHistory();
-        this.clearCart();
-        alert('Payment Successful! Your order has been recorded.');
-        this.gcashDetails = { name: "", number: "", pin: "", amount: "" };
-        this.selectedPayment = null;
-        this.$router.push('/profile');
-      } catch (error) {
-        console.error('Error processing payment:', error);
-        alert('There was an error processing your payment. Please try again.');
-      }
+    formatDate(date) {
+      const dateObj = new Date(date);
+      return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     },
-    clearCart() {
-      this.cartItems = [];
-      localStorage.removeItem('cartItems');
+    validateContactNumber() {
+      this.codDetails.contactNumber = this.codDetails.contactNumber.replace(/[^0-9]/g, '');
+    },
+    showNotificationMessage(message) {
+      // Clear any existing timeout
+      if (this.notificationTimeout) {
+        clearTimeout(this.notificationTimeout);
+      }
+      
+      // Set message and show notification
+      this.notificationMessage = message;
+      this.showNotification = true;
+      
+      // Hide notification after 2 seconds
+      this.notificationTimeout = setTimeout(() => {
+        this.showNotification = false;
+      }, 2000);
     },
     cancelPayment() {
-      this.selectedPayment = null; // Reset the selected payment method
-      this.showPaymentModal = false; // Close the payment modal
-    }
+      // Reset payment selection
+      this.selectedPayment = null;
+      
+      // Clear payment details
+      this.gcashDetails = {
+        name: "",
+        number: "",
+        pin: "",
+        amount: ""
+      };
+      
+      this.codDetails = {
+        fullName: "",
+        contactNumber: "",
+        address: "",
+        amount: ""
+      };
+      
+      // Close any open payment modals
+      this.showPaymentModal = false;
+    },
   }
 };
 </script>
@@ -454,62 +715,89 @@ export default {
 }
 
 .gcash-form {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: #f3cea2;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 30px;
   border-radius: 12px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 400px;
+  max-width: 90%;
+  z-index: 1000;
 }
 
 .gcash-form h3 {
   text-align: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  color: #4b2d1f;
+  font-size: 1.5em;
 }
 
 .gcash-form form {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  width: 100%;
-  max-width: 300px; 
+}
+
+.gcash-form form div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .gcash-form label {
-  font-size: 16px;
-  font-weight: 600;
-  text-align: left;
+  font-weight: 500;
+  color: #4b2d1f;
 }
 
-.gcash-form input {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  width: 100%; 
+.gcash-form input,
+.gcash-form textarea {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1em;
+}
+
+.gcash-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.gcash-form input:read-only {
+  background-color: #f5f5f5;
 }
 
 .submit-payment-button {
   background-color: #4b2d1f;
   color: white;
-  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 6px;
   cursor: pointer;
-  margin-top: 15px;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.submit-payment-button:hover {
+  background-color: #3a2218;
 }
 
 .cancel-payment-button {
-  background-color: #e74c3c;
-  color: white;
-  padding: 10px 20px;
+  background-color: #e0e0e0;
+  color: #333;
   border: none;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 6px;
   cursor: pointer;
-  margin-top: 15px;
+  font-weight: 500;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.cancel-payment-button:hover {
+  background-color: #d0d0d0;
 }
 
 .payment-modal {
@@ -556,5 +844,29 @@ export default {
   margin-top: 20px;
   width: 100%;
   cursor: pointer;
+}
+
+/* Notification Styles */
+.notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(75, 45, 31, 0.9);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 30px;
+  font-weight: 500;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Fade transition */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>

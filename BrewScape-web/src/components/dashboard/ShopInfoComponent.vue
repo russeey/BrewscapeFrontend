@@ -2,18 +2,18 @@
   <div class="shop-info">
     <img :src="shopImage" alt="Shop Image" class="shop-image"/>
     <div class="shop-details">
-      <p><span class="label">Shop Name:</span> BrewScape</p>
+      <p><span class="label">Shop Name:</span> Kape Barato</p>
       <p><span class="label">Shop Location:</span> Pabayo-Chaves Street, Cagayan de Oro City</p>
       <p><span class="label">Contact:</span> 09*********</p>
     </div>
     <div class="shop-rating">
       <p>
-        Ratings:
+        Your Rating:
         <span
           v-for="star in 5"
           :key="star"
           class="star"
-          :class="{ 'filled': star <= currentRating || star <= hoverRating }"
+          :class="{ 'filled': star <= getUserRating() || star <= hoverRating }"
           @click="setRating(star)"
           @mouseover="hoverRating = star"
           @mouseleave="hoverRating = 0"
@@ -21,31 +21,67 @@
           ★
         </span>
       </p>
-      <p>Your Rating: {{ currentRating }} stars</p>
+      <p>Your Rating: {{ getUserRating() }} stars</p>
+      <p v-if="averageRating > 0">Average Shop Rating: {{ averageRating }} stars</p>
+      <p v-else>Be the first to rate this shop!</p>
     </div>
   </div>
 </template>
 
 <script>
 import shopImage from '@/assets/images.png';
+import authService from '@/services/authService'; // Assuming authService is defined in this file
 
 export default {
   name: 'ShopInfoComponent',
   data() {
     return {
       hoverRating: 0,
-      shopImage
+      shopImage,
+      userRatings: JSON.parse(localStorage.getItem('userRatings')) || {},
+      averageRating: 0
     }
   },
-  props: {
-    currentRating: {
-      type: Number,
-      default: 0
-    }
+  mounted() {
+    this.loadRatings();
   },
   methods: {
     setRating(rating) {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || !currentUser.email) {
+        console.warn('User must be logged in to rate');
+        return;
+      }
+
+      // Get existing ratings
+      const ratings = JSON.parse(localStorage.getItem('userRatings')) || {};
+      
+      // Set this user's rating
+      ratings[currentUser.email] = rating;
+      
+      // Save to localStorage
+      localStorage.setItem('userRatings', JSON.stringify(ratings));
+      
+      // Update average rating
+      this.loadRatings();
+      
+      // Emit the event
       this.$emit('update-rating', rating);
+    },
+    loadRatings() {
+      const ratings = JSON.parse(localStorage.getItem('userRatings')) || {};
+      this.userRatings = ratings;
+      
+      // Calculate average rating
+      const ratingValues = Object.values(ratings);
+      this.averageRating = ratingValues.length > 0 
+        ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
+        : 0;
+    },
+    getUserRating() {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || !currentUser.email) return 0;
+      return this.userRatings[currentUser.email] || 0;
     }
   }
 }

@@ -40,7 +40,7 @@
 <section class="menu-section">
   <div class="shop-info">
     <div class="shop-details">
-      <p><span class="label">Shop Name:</span> BrewScape</p>
+      <p><span class="label">Shop Name:</span> Kape Barato</p>
       <p><span class="label">Shop Location:</span> Pabayo-Chaves Street, Cagayan de Oro City</p>
       <p><span class="label">Contact:</span> 09*********</p>
     </div>

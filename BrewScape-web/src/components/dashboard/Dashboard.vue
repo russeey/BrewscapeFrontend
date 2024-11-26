@@ -75,16 +75,16 @@ export default {
     const searchTerm = ref('');
     const isAuthenticated = ref(false);
     const coffeeMenu = ref([
-      { name: 'Iced Cappuccino', price: 120 },
-      { name: 'Salted Caramel Cold Brew', price: 120 },
-      { name: 'Caffè Misto', price: 120 },
-      { name: 'Caramel Macchiato', price: 120 },
-      { name: 'Iced Coffee', price: 120 }
+      { name: 'Iced Cappuccino', price: 120, image: 'Iced Cappucino.jpg' },
+      { name: 'Salted Caramel Cold Brew', price: 120, image: 'Salted Caramel Cold Brew.jpg' },
+      { name: 'Caffè Misto', price: 120, image: 'Caffè Misto.jpg' },
+      { name: 'Caramel Macchiato', price: 120, image: 'Caramel Macchiato.jpg' },
+      { name: 'Iced Coffee', price: 120, image: 'Iced Coffee.jpg' }
     ]);
     const pastriesMenu = ref([
-      { name: 'Chocolate Chip Cookie', price: 60 },
-      { name: 'Classic Croissant', price: 60 },
-      { name: 'Blueberry Muffin', price: 60 }
+      { name: 'Chocolate Chip Cookie', price: 60, image: 'Chocolate Chip Cookie.png' },
+      { name: 'Classic Croissant', price: 60, image: 'Classic Croissant.png' },
+      { name: 'Blueberry Muffin', price: 60, image: 'Blueberry Muffin.png' }
     ]);
     const promoMessage = ref("Relax with a refreshing delivery deal");
     const secondPromoMessage = ref("Special Offer");
@@ -111,9 +111,14 @@ export default {
       router.push('/profile');
     };
 
-    const logout = () => {
-      authService.logout();
-      router.push('/');
+    const logout = async () => {
+      try {
+        await authService.logout();
+        isAuthenticated.value = false;
+        router.push('/');  
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
     };
 
     const setRating = (rating) => {
@@ -157,6 +162,7 @@ export default {
   justify-content: space-between;
   margin-top: 40px;
   min-height: 600px;
+  gap: 30px;
 }
 
 .menu-container {
@@ -165,6 +171,7 @@ export default {
   flex-direction: column;
   min-width: 600px;
   height: fit-content;
+  gap: 20px;
 }
 
 .menu-items {
@@ -175,6 +182,8 @@ export default {
 
 .search-above-menu {
   width: 100%;
+  margin-bottom: 20px;
+  padding: 0 10px;
 }
 
 .footer p {

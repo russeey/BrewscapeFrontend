@@ -41,15 +41,27 @@
             <div class="history-column">Date</div>
           </div>
           <div class="history-content">
-            <div v-if="orderHistory.length > 0">
+            <div v-if="orderHistory && orderHistory.length > 0">
               <div v-for="(order, index) in orderHistory" :key="index" class="history-row">
                 <div v-for="(item, itemIndex) in order.items" :key="itemIndex" class="history-item">
                   <div class="history-column">{{ item.name }}</div>
                   <div class="history-column">{{ item.quantity }}</div>
-                  <div class="history-column">₱{{ item.price }}</div>
+                  <div class="history-column">₱{{ item.price.toFixed(2) }}</div>
                   <div class="history-column">{{ formatDate(order.date) }}</div>
                 </div>
-                <div class="order-total">Total: ₱{{ order.total }}</div>
+                <div class="order-total">Total: ₱{{ order.total.toFixed(2) }}</div>
+                <div class="payment-method">
+                  Payment Method: {{ order.paymentMethod }}
+                  <div v-if="order.paymentDetails" class="payment-details">
+                    <template v-if="order.paymentMethod === 'Cash on Delivery'">
+                      <div>Delivery Address: {{ order.paymentDetails.address }}</div>
+                      <div>Contact Number: {{ order.paymentDetails.contactNumber }}</div>
+                    </template>
+                    <template v-else-if="order.paymentMethod === 'Gcash'">
+                      <div>GCash Number: {{ order.paymentDetails.number }}</div>
+                    </template>
+                  </div>
+                </div>
                 <div class="row-divider"></div>
               </div>
             </div>
@@ -99,6 +111,7 @@
 <script>
 import profileImage from '@/assets/gratis-png-noragami-anime-manga-yato-no-kami-youtube-anime-thumbnail.png';
 import NavbarComponent from './NavbarComponent.vue';
+import authService from '../services/authService';
 
 export default {
   components: {
@@ -117,7 +130,10 @@ export default {
         birthday: '',
         gender: ''
       },
-      orderHistory: []
+      orderHistory: [],
+      showNotification: false,
+      notificationMessage: '',
+      notificationTimeout: null
     };
   },
 
@@ -130,13 +146,16 @@ export default {
   },
 
   created() {
+    this.user = this.getUserProfile();
     this.loadOrderHistory();
-    // Reload orders when returning to profile
-    window.addEventListener('focus', this.loadOrderHistory);
+    
+    // Add storage event listener to update order history in real-time
+    window.addEventListener('storage', this.handleStorageChange);
   },
 
   beforeDestroy() {
-    window.removeEventListener('focus', this.loadOrderHistory);
+    // Remove storage event listener
+    window.removeEventListener('storage', this.handleStorageChange);
   },
 
   watch: {
@@ -149,6 +168,11 @@ export default {
   },
 
   methods: {
+    handleStorageChange(event) {
+      if (event.key === 'allOrders') {
+        this.loadOrderHistory();
+      }
+    },
     goToDashboard() {
       this.$router.push("/dashboard"); 
     },
@@ -160,54 +184,102 @@ export default {
       this.$router.push("/login");
     },
     openEditProfileModal() {
-   
       this.editedUser = { ...this.user };
       this.isEditProfileModalOpen = true;
+      this.showNotificationMessage('Please update your personal information to ensure accurate delivery.');
     },
     closeEditProfileModal() {
       this.isEditProfileModalOpen = false;
     },
     updateProfile() {
-     
-      this.user = { ...this.editedUser };
-      localStorage.setItem('userProfile', JSON.stringify(this.user));
-      this.closeEditProfileModal(); 
-      alert('Profile updated successfully!');
+      try {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || !currentUser.email) {
+          this.showNotificationMessage('Error: User not found');
+          return;
+        }
+
+        // Get all user profiles
+        const allProfiles = JSON.parse(localStorage.getItem('allUserProfiles')) || {};
+        
+        // Update the profile for current user
+        allProfiles[currentUser.email] = { ...this.editedUser };
+        
+        // Save back to localStorage
+        localStorage.setItem('allUserProfiles', JSON.stringify(allProfiles));
+        
+        // Update local user object
+        this.user = { ...this.editedUser };
+        
+        // Close modal and show success message
+        this.closeEditProfileModal();
+        this.showNotificationMessage('Profile updated successfully!');
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        this.showNotificationMessage('Error updating profile');
+      }
     },
 
-  
     getUserProfile() {
-      const storedUserProfile = localStorage.getItem('userProfile');
-      return storedUserProfile ? JSON.parse(storedUserProfile) : {
-        name: 'John Doe', 
-        email: 'john.doe@example.com',
-        location: 'Cagayan de Oro',
-        contractNumber: '123-456-7890',
-        birthday: '1990-01-01',
-        gender: 'Male'
+      try {
+        // Get the current user's email from auth service
+        const currentUserEmail = authService.getCurrentUser()?.email;
+        if (!currentUserEmail) {
+          console.warn('No user email found');
+          return this.getEmptyProfile();
+        }
+
+        // Get all user profiles
+        const allProfiles = JSON.parse(localStorage.getItem('allUserProfiles') || '{}');
+        
+        // Get current user's profile
+        const userProfile = allProfiles[currentUserEmail];
+        
+        if (!userProfile) {
+          console.warn('No profile found for user:', currentUserEmail);
+          return this.getEmptyProfile();
+        }
+
+        return userProfile;
+      } catch (error) {
+        console.error('Error getting user profile:', error);
+        return this.getEmptyProfile();
+      }
+    },
+
+    getEmptyProfile() {
+      return {
+        name: '',
+        email: '',
+        location: '',
+        contractNumber: '',
+        birthday: '',
+        gender: ''
       };
     },
+
     loadOrderHistory() {
       try {
-        // Get user profile
-        const userProfile = JSON.parse(localStorage.getItem('userProfile'));
-        if (!userProfile || !userProfile.email) {
-          console.warn('User profile not found');
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || !currentUser.email) {
+          console.warn('No authenticated user found');
           this.orderHistory = [];
           return;
         }
 
-        // Get all orders
+        // Get all orders from localStorage
         const allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
-        const userOrders = allOrders[userProfile.email] || [];
+        
+        // Get orders for current user
+        const userOrders = allOrders[currentUser.email] || [];
+        
+        // Sort orders by date, most recent first
+        this.orderHistory = userOrders.sort((a, b) => 
+          new Date(b.date) - new Date(a.date)
+        );
 
-        // Sort orders by date (newest first)
-        this.orderHistory = userOrders.sort((a, b) => {
-          return new Date(b.date) - new Date(a.date);
-        });
-
-        console.log('Loaded orders for user:', userProfile.email);
-        console.log('Orders:', this.orderHistory);
+        console.log('Loaded order history for:', currentUser.email);
+        console.log('Number of orders:', this.orderHistory.length);
       } catch (error) {
         console.error('Error loading orders:', error);
         this.orderHistory = [];
@@ -228,6 +300,21 @@ export default {
         return dateString;
       }
     },
+    showNotificationMessage(message) {
+      // Clear any existing timeout
+      if (this.notificationTimeout) {
+        clearTimeout(this.notificationTimeout);
+      }
+      
+      // Set message and show notification
+      this.notificationMessage = message;
+      this.showNotification = true;
+      
+      // Hide notification after 2 seconds
+      this.notificationTimeout = setTimeout(() => {
+        this.showNotification = false;
+      }, 2000);
+    }
   }
 };
 </script>
@@ -369,6 +456,26 @@ export default {
   color: #4d2c16;
 }
 
+.payment-method {
+  text-align: right;
+  padding: 8px;
+  font-weight: bold;
+  color: #4d2c16;
+}
+
+.payment-details {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.payment-details div {
+  margin: 4px 0;
+  color: #666;
+}
+
 .row-divider {
   height: 1px;
   background: #eee;
@@ -504,5 +611,29 @@ button[type="submit"] {
 
 button[type="submit"]:hover {
   background-color: #3a2115;
+}
+
+.notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(75, 45, 31, 0.9);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 30px;
+  font-weight: 500;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
