@@ -5,29 +5,35 @@
       <div class="nav-links">
         <button class="nav-btn" @click="goToCart">Cart</button>
         <button class="nav-btn" @click="goToDashboard">Dashboard</button>
-        <button class="nav-btn logout" @click="logout">Logout</button>
+        <button class="nav-btn logout" @click="logout">Back</button>
       </div>
     </nav>
     <div class="dashboard-content">
       <div class="personal-info">
-        <h2>Personal Information</h2>
-        <div class="image-container">
-          <img :src="profileImage" alt="Profile Image" class="profile-image" />
-        </div>
-        <div class="info-details">
-          <p class="info-item"><strong><span class="highlight">Name:</span></strong> {{ user.name }}</p>
-          <p class="info-item"><strong><span class="highlight">Email Address:</span></strong> {{ user.email }}</p>
-          <p class="info-item"><strong><span class="highlight">Location:</span></strong> {{ user.location }}</p>
-          <p class="info-item"><strong><span class="highlight">Contract Number:</span></strong> {{ user.contractNumber }}</p>
-          <div class="info-item-container">
-            <div class="info-item-birthday">
-              <strong><span class="highlight">Birthday:</span></strong> {{ user.birthday }}
+        <div class="profile-container">
+          <h2 style="text-align: center;">Personal Information</h2>
+          <div class="image-container">
+            <img :src="profilePicture" alt="Profile Image" class="profile-image" />
+            <label for="file-input" class="upload-label">Change Profile Picture</label>
+            <input type="file" id="file-input" @change="onFileChange" accept="image/*" style="display: none;" />
+          </div>
+          <div class="info-details">
+            <p class="info-item"><strong><span class="highlight">Name:</span></strong> {{ user.name }}</p>
+            <p class="info-item"><strong><span class="highlight">Email Address:</span></strong> {{ user.email }}</p>
+            <p class="info-item"><strong><span class="highlight">Location:</span></strong> {{ user.location }}</p>
+            <p class="info-item"><strong><span class="highlight">Contract Number:</span></strong> {{ user.contractNumber }}</p>
+            <div class="info-item-container">
+              <div class="info-item-birthday">
+                <strong><span class="highlight">Birthday:</span></strong> {{ user.birthday }}
+              </div>
+              <div class="info-item-gender">
+                <strong><span class="highlight">Gender:</span></strong> {{ user.gender }}
+              </div>
             </div>
-            <div class="info-item-gender">
-              <strong><span class="highlight">Gender:</span></strong> {{ user.gender }}
+            <div class="button-container">
+              <button class="edit-profile-button" @click="openEditProfileModal">Edit Profile</button>
             </div>
           </div>
-          <button class="edit-profile-button" @click="openEditProfileModal">Edit Profile</button>
         </div>
       </div>
 
@@ -54,11 +60,14 @@
                   Payment Method: {{ order.paymentMethod }}
                   <div v-if="order.paymentDetails" class="payment-details">
                     <template v-if="order.paymentMethod === 'Cash on Delivery'">
+                      <div>Full Name: {{ order.paymentDetails.fullName }}</div>
                       <div>Delivery Address: {{ order.paymentDetails.address }}</div>
                       <div>Contact Number: {{ order.paymentDetails.contactNumber }}</div>
                     </template>
                     <template v-else-if="order.paymentMethod === 'Gcash'">
-                      <div>GCash Number: {{ order.paymentDetails.number }}</div>
+                      <div>Full Name: {{ order.paymentDetails.fullName }}</div>
+                      <div>Delivery Address: {{ order.paymentDetails.address }}</div>
+                      <div>GCash Number: {{ order.paymentDetails.accountNumber }}</div>
                     </template>
                   </div>
                 </div>
@@ -89,7 +98,7 @@
           <input type="text" v-model="editedUser.location" required />
           
           <label>Contract Number:</label>
-          <input type="text" v-model="editedUser.contractNumber" required />
+          <input type="tel" v-model="editedUser.contractNumber" @input="filterInput" placeholder="Enter your contact number" required />
           
           <label>Birthday:</label>
           <input type="date" v-model="editedUser.birthday" required />
@@ -109,7 +118,6 @@
 </template>
 
 <script>
-import profileImage from '@/assets/gratis-png-noragami-anime-manga-yato-no-kami-youtube-anime-thumbnail.png';
 import NavbarComponent from './NavbarComponent.vue';
 import authService from '../services/authService';
 
@@ -119,9 +127,9 @@ export default {
   },
   data() {
     return {
-      profileImage,
+      profilePicture: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
       isEditProfileModalOpen: false,
-      user: this.getUserProfile(),
+      user: null,
       editedUser: {
         name: '',
         email: '',
@@ -137,20 +145,11 @@ export default {
     };
   },
 
-  computed: {
-    totalSpend() {
-      return this.orderHistory.reduce((sum, order) => {
-        return sum + order.items.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0);
-      }, 0).toFixed(2) + '₱';
-    }
-  },
-
   created() {
+    window.addEventListener('storage', this.handleStorageChange);
     this.user = this.getUserProfile();
     this.loadOrderHistory();
-    
-    // Add storage event listener to update order history in real-time
-    window.addEventListener('storage', this.handleStorageChange);
+    this.loadProfilePicture();
   },
 
   beforeDestroy() {
@@ -173,15 +172,33 @@ export default {
         this.loadOrderHistory();
       }
     },
+    loadProfilePicture() {
+      const email = authService.getCurrentUser()?.email;
+      if (!email) {
+        console.warn('No email found, cannot load profile picture.');
+        return;
+      }
+      console.log('Attempting to load profile picture for email:', email);
+      const savedPicture = localStorage.getItem(`profile_${email}`);
+      if (savedPicture) {
+        this.profilePicture = savedPicture;
+        console.log('Profile picture loaded successfully from localStorage.');
+      } else {
+        console.warn('No profile picture found in localStorage for email:', email);
+      }
+    },
+
     goToDashboard() {
       this.$router.push("/dashboard"); 
+      this.loadProfilePicture();
     },
     goToCart() {
       this.$router.push("/cart"); 
+      this.loadProfilePicture();
     },
     logout() {
-      localStorage.removeItem("loggedInUserId");
-      this.$router.push("/login");
+      localStorage.removeItem('loggedInUserId');
+      this.$router.push('/login');
     },
     openEditProfileModal() {
       this.editedUser = { ...this.user };
@@ -314,6 +331,31 @@ export default {
       this.notificationTimeout = setTimeout(() => {
         this.showNotification = false;
       }, 2000);
+    },
+    async onFileChange(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        console.warn('No file selected.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const email = authService.getCurrentUser()?.email;
+        if (!email) {
+          console.warn('No email found, cannot save profile picture.');
+          return;
+        }
+        console.log('Attempting to save profile picture for email:', email);
+        this.profilePicture = e.target.result;
+        localStorage.setItem(`profile_${email}`, e.target.result);
+        console.log('Profile picture saved successfully to localStorage.');
+        this.showNotificationMessage('Profile picture updated successfully!');
+      };
+      reader.readAsDataURL(file);
+    },
+    filterInput(event) {
+      const input = event.target;
+      input.value = input.value.replace(/[^0-9]/g, '');
     }
   }
 };
@@ -388,11 +430,99 @@ export default {
   top: 0;
   display: flex;
   flex-direction: column;
-  align-items: center; 
+  align-items: flex-start; 
   text-align: left; 
   margin-top: 0; 
-  padding-right: 1155px; 
+  padding-right: 0; 
   height: fit-content;
+  margin-left: 20px;
+}
+
+.profile-container {
+  text-align: center; /* Center text for heading and image */
+  margin-left: 20px; /* Add some margin for spacing */
+}
+
+.image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 3px solid #4b2d1f;
+}
+
+.upload-label {
+  cursor: pointer;
+  padding: 8px 16px;
+  background-color: #4b2d1f;
+  color: white;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.upload-label:hover {
+  background-color: #6b4d3f;
+}
+
+.info-details {
+  margin-top: 20px; 
+  font-size: 16px; 
+  text-align: left; /* Align user details to the left */
+}
+
+.info-item {
+  border: 2px solid white;
+  border-radius: 30px; 
+  padding: 10px; 
+  margin: 12px 0;
+  background-color: rgba(255, 255, 255, 0.8); 
+}
+
+.info-item-container {
+  display: flex; 
+  justify-content: space-between; 
+  width: 100%; 
+  margin-top: 12px; 
+}
+
+.info-item-birthday {
+  border: 2px solid white;
+  border-radius: 20px; 
+  padding: 8px; 
+  margin-right: 12px; 
+  background-color: rgba(255, 255, 255, 0.8); 
+  flex: 1; 
+  font-size: 12px; 
+}
+
+.info-item-gender {
+  border: 2px solid white; 
+  border-radius: 20px; 
+  padding: 8px; 
+  background-color: rgba(255, 255, 255, 0.8); 
+  flex: 1; 
+  font-size: 12px;
+}
+
+.button-container {
+  text-align: center; /* Center the button */
+  margin-top: 20px;
+}
+
+.edit-profile-button {
+  margin-top: 20px; 
+  background-color: #4b2d1f; 
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px; 
 }
 
 .purchase-history-section {
@@ -488,65 +618,6 @@ export default {
   color: #666;
 }
 
-.image-container {
-  margin-top: 3px; 
-}
-
-.profile-image {
-  width: 125px; 
-  height: 125px; 
-  border-radius: 50%; 
-  object-fit: cover;
-  border: 1px solid #000000; 
-}
-
-.info-details {
-  margin-top: 20px; 
-  font-size: 16px; 
-}
-
-.info-item {
-  border: 2px solid white;
-  border-radius: 30px; 
-  padding: 10px; 
-  margin: 12px 0;
-  background-color: rgba(255, 255, 255, 0.8); 
-}
-
-.info-item-container {
-  display: flex; 
-  justify-content: space-between; 
-  width: 100%; 
-  margin-top: 12px; 
-}
-
-.info-item-birthday {
-  border: 2px solid white;
-  border-radius: 20px; 
-  padding: 8px; 
-  margin-right: 12px; 
-  background-color: rgba(255, 255, 255, 0.8); 
-  flex: 1; 
-  font-size: 12px; 
-}
-
-.info-item-gender {
-  border: 2px solid white; 
-  border-radius: 20px; 
-  padding: 8px; 
-  background-color: rgba(255, 255, 255, 0.8); 
-  flex: 1; 
-  font-size: 12px;
-}
-
-.edit-profile-button {
-  margin-top: 20px; 
-  background-color: #4b2d1f; 
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px; 
-}
-
 .modal {
   position: fixed;
   z-index: 1;
@@ -635,5 +706,21 @@ button[type="submit"]:hover {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.image-container input[type="file"] {
+  display: none;
+}
+
+.image-container label {
+  background-color: #f8e2c2;
+  color: rgb(0, 0, 0); /* Change text color to white */
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.image-container label:hover {
+  background-color: #f8e2c2;
 }
 </style>

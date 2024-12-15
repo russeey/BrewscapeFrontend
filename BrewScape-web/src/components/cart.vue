@@ -12,7 +12,7 @@
               <i class="fas fa-user"></i> Profile
             </button>
             <button class="nav-btn logout" @click="logout">
-              <i class="fas fa-sign-out-alt"></i> Logout
+              <i class="fas fa-sign-out-alt"></i> Back
             </button>
           </div>
         </nav>
@@ -60,33 +60,16 @@
             <h3>Gcash Payment</h3>
             <form @submit.prevent="submitGcashPayment">
               <div>
-                <label for="gcash-name">Name</label>
+                <label for="gcash-name">Full Name:</label>
                 <input type="text" id="gcash-name" v-model="gcashDetails.name" required />
               </div>
               <div>
-                <label for="gcash-number">Gcash Number</label>
-                <input 
-                  type="text" 
-                  id="gcash-number" 
-                  v-model="gcashDetails.number" 
-                  required 
-                  pattern="\d*" 
-                  @input="validateGcashNumber" 
-                  title="Only numbers are allowed" />
+                <label for="gcash-address">Address:</label>
+                <input type="text" id="gcash-address" v-model="gcashDetails.address" required />
               </div>
-
               <div>
-                <label for="gcash-pin">Gcash PIN</label>
-                <input 
-                  type="password" 
-                  id="gcash-pin" 
-                  v-model="gcashDetails.pin" 
-                  required 
-                  pattern="\d{4}" 
-                  maxlength="4" 
-                  title="Please enter a 4-digit PIN" 
-                  @input="validateGcashPin" 
-                />
+                <label for="gcash-account-number">Gcash Account Number:</label>
+                <input type="text" id="gcash-account-number" v-model="gcashDetails.accountNumber" value="09261961756" readonly />
               </div>
               <div>
                 <label for="gcash-amount">Amount</label>
@@ -190,8 +173,8 @@ export default {
       selectedPayment: null,
       gcashDetails: {
         name: "",
-        number: "",
-        pin: "",
+        address: "",
+        accountNumber: "09261961756", // Fixed account number
         amount: ""
       },
       codDetails: {
@@ -354,8 +337,8 @@ export default {
         // Reset GCash form
         this.gcashDetails = { 
           name: "", 
-          number: "", 
-          pin: "", 
+          address: "", 
+          accountNumber: "09261961756", // Fixed account number
           amount: "" 
         };
         
@@ -435,60 +418,65 @@ export default {
       }
     },
     async saveOrderToHistory() {
-      try {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || !currentUser.email) {
-          throw new Error('No authenticated user found');
-        }
+  try {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser || !currentUser.email) {
+      throw new Error('No authenticated user found');
+    }
 
-        const order = {
-          items: this.cartItems.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price
-          })),
-          total: this.cartTotal,
-          date: new Date().toISOString(),
-          paymentMethod: this.selectedPayment,
-          paymentDetails: this.selectedPayment === 'Gcash' 
-            ? {
-                name: this.gcashDetails.name,
-                number: this.gcashDetails.number,
-                amount: this.gcashDetails.amount
-              }
-            : this.selectedPayment === 'Cash on Delivery'
-            ? {
-                fullName: this.codDetails.fullName,
-                contactNumber: this.codDetails.contactNumber,
-                address: this.codDetails.address,
-                amount: this.codDetails.amount
-              }
-            : null
-        };
+    // Debugging logs
+    console.log('Gcash Details:', this.gcashDetails);
+    console.log('Gcash Full Name:', this.gcashDetails.name);
+    console.log('Selected Payment Method:', this.selectedPayment);
 
-        // Get existing orders or initialize empty object
-        const allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
-        
-        // Initialize array for this user if it doesn't exist
-        if (!allOrders[currentUser.email]) {
-          allOrders[currentUser.email] = [];
-        }
+    const order = {
+      items: this.cartItems.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price
+      })),
+      total: this.cartTotal,
+      date: new Date().toISOString(),
+      paymentMethod: this.selectedPayment,
+      paymentDetails: this.selectedPayment === 'Gcash' 
+  ? {
+      fullName: this.gcashDetails.name,
+      address: this.gcashDetails.address,
+      accountNumber: this.gcashDetails.accountNumber
+    }
+  : this.selectedPayment === 'Cash on Delivery'
+  ? {
+      fullName: this.codDetails.fullName,
+      contactNumber: this.codDetails.contactNumber,
+      address: this.codDetails.address,
+      amount: this.codDetails.amount
+    }
+  : null
+    };
 
-        // Add new order to the beginning of the array
-        allOrders[currentUser.email].unshift(order);
-        
-        // Save back to localStorage
-        localStorage.setItem('allOrders', JSON.stringify(allOrders));
-        
-        // Trigger storage event for real-time updates
-        window.dispatchEvent(new Event('storage'));
-        
-        console.log('Order saved successfully for user:', currentUser.email);
-      } catch (error) {
-        console.error('Error saving order:', error);
-        throw error;
-      }
-    },
+    // Get existing orders or initialize empty object
+    const allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
+    
+    // Initialize array for this user if it doesn't exist
+    if (!allOrders[currentUser.email]) {
+      allOrders[currentUser.email] = [];
+    }
+
+    // Add new order to the beginning of the array
+    allOrders[currentUser.email].unshift(order);
+    
+    // Save back to localStorage
+    localStorage.setItem('allOrders', JSON.stringify(allOrders));
+    
+    // Trigger storage event for real-time updates
+    window.dispatchEvent(new Event('storage'));
+    
+    console.log('Order saved successfully for user:', currentUser.email);
+  } catch (error) {
+    console.error('Error saving order:', error);
+    throw error;
+  }
+},
     formatDate(date) {
       const dateObj = new Date(date);
       return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -518,8 +506,8 @@ export default {
       // Clear payment details
       this.gcashDetails = {
         name: "",
-        number: "",
-        pin: "",
+        address: "",
+        accountNumber: "09261961756", // Fixed account number
         amount: ""
       };
       

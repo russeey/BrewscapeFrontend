@@ -4,6 +4,9 @@ import SignUp from "./components/signup.vue";
 import Dashboard from "./components/dashboard/Dashboard.vue";
 import profile from "./components/profile.vue";
 import cart from './components/cart.vue';
+import AdminLogin from './components/admin-login.vue';
+import AdminDashboard from "./components/AdminDashboard.vue";
+import OwnerLogin from './components/owner-login.vue';
 import authService from '@/services/authService';
 
 import { createRouter, createWebHistory } from "vue-router";
@@ -21,6 +24,30 @@ const router = createRouter({
       name: "Login",
       component: Login,
       meta: { requiresGuest: true }
+    },
+    {
+      path: "/admin-login",
+      name: "AdminLogin",
+      component: AdminLogin,
+      meta: { requiresGuest: true }
+    },
+    {
+      path: "/owner-login",
+      name: "OwnerLogin",
+      component: OwnerLogin,
+      meta: { requiresGuest: true }
+    },
+    {
+      path: '/owner-dashboard',
+      name: 'ownerDashboard',
+      component: () => import('@/components/ownerDashboard.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: "/admin-dashboard",
+      name: "AdminDashboard",
+      component: AdminDashboard,
+      meta: { requiresAuth: true }
     },
     {
       path: "/signup",

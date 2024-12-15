@@ -54,15 +54,16 @@
     <!-- About Us Section -->
     <section id="about-us">
       <h2>About Us</h2>
-      <p>---Details---</p>
+      <p>Welcome to BrewScape, your cozy retreat in the heart of Cagayan de Oro City! ☕✨</p>
     </section>
 
     <!-- For Business Partners Section -->
     <section id="business-partners">
       <h2>For Business Partners</h2>
-      <p>---Details---</p>
-    </section>
+      <p>At BrewScape, we believe partnerships drive growth and success.</p>
+<p>We’re committed to building strong, mutually beneficial relationships with local businesses, suppliers, and community organizations.</p>
 
+    </section>
     <!-- Footer Section -->
     <footer>
       <div class="footer-links">

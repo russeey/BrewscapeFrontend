@@ -17,8 +17,6 @@
         </div>
       </li>
     </ul>
-    
-    <!-- Notification -->
     <transition name="fade">
       <div v-if="showNotification" class="notification">
         {{ notificationMessage }}

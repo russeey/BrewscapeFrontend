@@ -5,7 +5,7 @@
     </div>
     <div class="promo-content">
       <h2>{{ message }}</h2>
-      <p v-if="discount">Get up? Please! Stay right where you are and enjoy {{ discount }}.</p>
+      <p v-if="discount">Get up? Please! Stay right where you are and enjoy. Treat yourself to your favorite brews today—because great coffee is just a click away! {{ discount }}.</p>
     </div>
   </section>
 </template>

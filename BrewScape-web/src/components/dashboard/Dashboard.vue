@@ -3,9 +3,11 @@
     <header-component
       @go-to-cart="goToCart"
       @go-to-profile="goToProfile"
-      @logout="logout"
+      @logout="confirmLogout"
       class="header-margin"
     />
+
+    <div v-if="showNotification" class="notification">You have logged out successfully!</div>
 
     <promo-component
       :message="promoMessage"
@@ -41,9 +43,6 @@
       </div>
     </section>
 
-    <footer class="footer">
-      <p> 2023 BrewScape. All rights reserved.</p>
-    </footer>
   </div>
   <div v-else>
     <h1>You are not authorized to view this page.</h1>
@@ -76,20 +75,23 @@ export default {
     const isAuthenticated = ref(false);
     const coffeeMenu = ref([
       { name: 'Iced Cappuccino', price: 120, image: 'Iced Cappucino.jpg' },
-      { name: 'Salted Caramel Cold Brew', price: 120, image: 'Salted Caramel Cold Brew.jpg' },
-      { name: 'Caffè Misto', price: 120, image: 'Caffè Misto.jpg' },
-      { name: 'Caramel Macchiato', price: 120, image: 'Caramel Macchiato.jpg' },
-      { name: 'Iced Coffee', price: 120, image: 'Iced Coffee.jpg' }
+      { name: 'Salted Caramel Cold Brew', price: 170, image: 'Salted Caramel Cold Brew.jpg' },
+      { name: 'Caffè Misto', price: 130, image: 'Caffè Misto.jpg' },
+      { name: 'Caramel Macchiato', price: 150, image: 'Caramel Macchiato.jpg' },
+      { name: 'Iced Coffee', price: 115, image: 'Iced Coffee.jpg' }
     ]);
     const pastriesMenu = ref([
       { name: 'Chocolate Chip Cookie', price: 60, image: 'Chocolate Chip Cookie.png' },
-      { name: 'Classic Croissant', price: 60, image: 'Classic Croissant.png' },
-      { name: 'Blueberry Muffin', price: 60, image: 'Blueberry Muffin.png' }
+      { name: 'Classic Croissant', price: 90, image: 'Classic Croissant.png' },
+      { name: 'Blueberry Muffin', price: 120, image: 'Blueberry Muffin.png' },
+      { name: 'Double Chocolate BC', price: 120, image: 'Double Chocolate BC.jpg' },
+      { name: 'White Chocolate Mousse', price: 150, image: 'White Chocolate Mousse.jpg' }
     ]);
     const promoMessage = ref("Relax with a refreshing delivery deal");
     const secondPromoMessage = ref("Special Offer");
     const discount = ref("5% off Coffee orders of P1000+");
     const currentRating = ref(0);
+    const showNotification = ref(false);
 
     onMounted(() => {
       isAuthenticated.value = authService.isAuthenticated();
@@ -115,9 +117,17 @@ export default {
       try {
         await authService.logout();
         isAuthenticated.value = false;
+        showNotification.value = true; 
+        setTimeout(() => { showNotification.value = false; }, 3000); 
         router.push('/');  
       } catch (error) {
         console.error('Logout error:', error);
+      }
+    };
+
+    const confirmLogout = () => {
+      if (confirm('Are you sure you want to log out?')) {
+        logout();
       }
     };
 
@@ -137,8 +147,9 @@ export default {
       currentRating,
       goToCart,
       goToProfile,
-      logout,
-      setRating
+      confirmLogout,
+      setRating,
+      showNotification,
     };
   }
 };
@@ -191,6 +202,19 @@ export default {
   color: #555;
   text-align: center;
   margin-top: 40px;
+}
+
+.notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #4caf50;
+  color: white;
+  padding: 20px;
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {

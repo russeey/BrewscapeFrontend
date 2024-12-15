@@ -26,16 +26,6 @@
           :disabled="isLockedOut"
         />
         <div class="check-box-div">
-          <div class="checkbox-container">
-            <input
-              type="checkbox"
-              id="keep-signed-in"
-              class="checkbox"
-              v-model="keepSignedIn"
-              :disabled="isLockedOut"
-            />
-            <label for="keep-signed-in">Keep me signed in</label>
-          </div>
           <a href="#">Forgot Password?</a>
         </div>
         <button type="submit" :disabled="loading || isLockedOut">
@@ -53,6 +43,7 @@
         <router-link to="/signup" class="join-now-btn">Join now</router-link>
       </div>
       <p class="admin-link" @click="loginAsAdmin">Sign in as coffee shop administrator</p>
+      <p class="admin-link" @click="loginAsOwner">Sign in as Coffee Shop Owner</p>
     </div>
   </div>
 </template>
@@ -68,7 +59,6 @@ export default {
     const router = useRouter();
     const email = ref('');
     const password = ref('');
-    const keepSignedIn = ref(false);
     const loading = ref(false);
     const errorMessage = ref('');
     const loginAttempts = ref(0);
@@ -83,7 +73,7 @@ export default {
       errorMessage.value = '';
       
       try {
-        await authService.login(email.value, password.value, keepSignedIn.value);
+        await authService.login(email.value, password.value);
         router.push('/dashboard');
       } catch (error) {
         handleLoginError(error);
@@ -102,7 +92,7 @@ export default {
       
       // Replace Firebase error with a generic message
       errorMessage.value = error.code === 'auth/invalid-credential' 
-        ? 'Incorrect username or password' 
+        ? 'Incorrect Username or Password' 
         : 'An error occurred during login';
     };
 
@@ -123,16 +113,37 @@ export default {
       countdown.value = 0;
     };
 
+    const loginAsAdmin = async () => {
+      if (isLockedOut.value) return;
+      
+      try {
+        router.push('/admin-login');
+      } catch (error) {
+        errorMessage.value = 'Error accessing admin login';
+      }
+    };
+
+    const loginAsOwner = async () => {
+      if (isLockedOut.value) return;
+      
+      try {
+        router.push('/owner-login');
+      } catch (error) {
+        errorMessage.value = 'Error accessing owner login';
+      }
+    };
+
     return {
       email,
       password,
-      keepSignedIn,
       loading,
       errorMessage,
       isLockedOut,
       countdown,
       loginUser,
-      handleLoginError
+      handleLoginError,
+      loginAsAdmin,
+      loginAsOwner
     };
   }
 };
@@ -197,10 +208,6 @@ h2 {
   color: #4d2c16;
 }
 
-.checkbox {
-  width: 20px;
-}
-
 .check-box-div {
   display: flex;
   align-items: start;
@@ -213,22 +220,6 @@ input {
   margin: 10px 0;
   border: 1px solid #ccc;
   border-radius: 5px;
-}
-
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #4d2c16;
-  justify-content: start;
-  margin-bottom: 10px;
-  width: 100%;
-}
-
-.checkbox-container label {
-  margin-left: 0%;
-  width: 100%;
-  text-align: start;
 }
 
 a {
@@ -287,5 +278,21 @@ button:hover:not([disabled]) {
   color: #4d2c16;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.owner-link {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #4d2c16;
+  background-color: #fbe5c7;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.owner-link:hover {
+  background-color: #4d2c16;
+  color: white;
 }
 </style>

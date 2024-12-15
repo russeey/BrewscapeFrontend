@@ -6,7 +6,7 @@
   </div>
   <button class="cart-button" @click="goToCart">Cart</button>
   <button class="profile-button" @click="goToProfile">Profile</button>
-  <button class="logout-button" @click="logout()">Logout</button>
+  <button class="logout-button" @click="confirmLogout">Logout</button>
 </header>
 
     <div class="search-bar">
@@ -165,6 +165,13 @@ export default {
   setRating(rating) {
       this.currentRating = rating;
       localStorage.setItem('brewscapeRating', rating);
+    },
+    confirmLogout() {
+      console.log('Logout button clicked');
+      console.log('Confirm logout method called');
+      if (confirm('Are you sure you want to log out?')) {
+        this.logout();
+      }
     },
     logout() {
       localStorage.removeItem("loggedInUserId");

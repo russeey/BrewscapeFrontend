@@ -14,6 +14,30 @@ const routes = [
     meta: { requiresGuest: true }
   },
   {
+    path: '/admin-login',
+    name: 'AdminLogin',
+    component: () => import('@/components/admin-login.vue'),
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/owner-login',
+    name: 'OwnerLogin',
+    component: () => import('@/components/owner-login.vue'),
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/owner-dashboard',
+    name: 'ownerDashboard',
+    component: () => import('@/components/ownerDashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin-dashboard',
+    name: 'AdminDashboard',
+    component: () => import('@/components/AdminDashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/signup',
     name: 'Signup',
     component: () => import('@/components/signup.vue'),
@@ -48,9 +72,11 @@ const router = createRouter({
   routes
 });
 
-// Navigation guard
+// Navigation guards
 router.beforeEach((to, from, next) => {
   const isAuthenticated = authService.isAuthenticated();
+  const isAdminAuthenticated = !!localStorage.getItem('adminId');
+  const isOwnerAuthenticated = !!localStorage.getItem('ownerId');
 
   // Handle routes that require authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
@@ -58,9 +84,33 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  // Handle routes that require admin authentication
+  if (to.meta.requiresAuth && to.name === 'AdminDashboard' && !isAdminAuthenticated) {
+    next('/admin-login');
+    return;
+  }
+
+  // Handle routes that require owner authentication
+  if (to.meta.requiresAuth && to.name === 'ownerDashboard' && !isOwnerAuthenticated) {
+    next('/owner-login');
+    return;
+  }
+
   // Handle routes that require guest access (like login page)
   if (to.meta.requiresGuest && isAuthenticated) {
     next('/dashboard');
+    return;
+  }
+
+  // Handle routes that require guest access (like admin login page)
+  if (to.meta.requiresGuest && to.name === 'AdminLogin' && isAdminAuthenticated) {
+    next('/admin-dashboard');
+    return;
+  }
+
+  // Handle routes that require guest access (like owner login page)
+  if (to.meta.requiresGuest && to.name === 'OwnerLogin' && isOwnerAuthenticated) {
+    next('/owner-dashboard');
     return;
   }
 
