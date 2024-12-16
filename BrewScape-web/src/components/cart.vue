@@ -77,7 +77,6 @@
               </div>
               <button type="submit" class="submit-payment-button">Submit Payment</button>
             </form>
-            <!-- Cancel Button to go back to the cart -->
             <button class="cancel-payment-button" @click="cancelPayment">Cancel</button>
           </div>
         </section>
@@ -162,7 +161,10 @@
 </template>
 
 <script>
+import { db } from "../firebase.config"; // Import Firebase Firestore
 import authService from "@/services/authService";
+import { addDoc, collection } from "firebase/firestore"; // Correctly import these functions
+
 
 export default {
   data() {
@@ -203,7 +205,6 @@ export default {
       this.$router.push('/login');
       return;
     }
-    // Load cart items for current user
     this.loadCartItems();
   },
   methods: {
@@ -218,8 +219,6 @@ export default {
 
         // Get all carts from localStorage
         const allCarts = JSON.parse(localStorage.getItem('userCarts')) || {};
-        
-        // Get cart for current user
         this.cartItems = allCarts[currentUser.email] || [];
       } catch (error) {
         console.error('Error loading cart:', error);
@@ -234,14 +233,8 @@ export default {
           console.warn('No authenticated user found');
           return;
         }
-
-        // Get all carts
         const allCarts = JSON.parse(localStorage.getItem('userCarts')) || {};
-        
-        // Update cart for current user
         allCarts[currentUser.email] = this.cartItems;
-        
-        // Save back to localStorage
         localStorage.setItem('userCarts', JSON.stringify(allCarts));
       } catch (error) {
         console.error('Error saving cart:', error);
@@ -315,215 +308,98 @@ export default {
       this.saveCartItems();
     },
 
-    validateGcashNumber() {
-      // Remove any non-numeric characters from the input
-      this.gcashDetails.number = this.gcashDetails.number.replace(/[^0-9]/g, '');
-    },
-    async submitGcashPayment() {
-      try {
-        // Validate cart
-        if (this.cartItems.length === 0) {
-          this.showNotificationMessage('Your cart is empty');
-          return;
-        }
-
-        // Process GCash payment
-        await this.saveOrderToHistory();
-        this.clearCart();
-        this.showPaymentModal = false;
-        this.selectedPayment = null;
-        this.showNotificationMessage('Payment successful! Thank you for your order.');
-        
-        // Reset GCash form
-        this.gcashDetails = { 
-          name: "", 
-          address: "", 
-          accountNumber: "09261961756", // Fixed account number
-          amount: "" 
-        };
-        
-        // Redirect to profile after a short delay
-        setTimeout(() => {
-          this.$router.push('/profile');
-        }, 2000);
-      } catch (error) {
-        console.error('Error processing payment:', error);
-        this.showNotificationMessage('Error processing payment. Please try again.');
-      }
-    },
-    async submitCashOnDeliveryPayment() {
-      try {
-        // Validate cart
-        if (this.cartItems.length === 0) {
-          this.showNotificationMessage('Your cart is empty');
-          return;
-        }
-
-        // Validate form fields
-        if (!this.codDetails.fullName || !this.codDetails.contactNumber || !this.codDetails.address) {
-          this.showNotificationMessage('Please fill in all required fields');
-          return;
-        }
-
-        // Process order and save to history
-        await this.saveOrderToHistory();
-        this.clearCart();
-        this.showPaymentModal = false;
-        this.selectedPayment = null;
-        
-        // Show success notification
-        this.showNotificationMessage('Order placed successfully! We will deliver your order soon.');
-        
-        // Reset COD form
-        this.codDetails = {
-          fullName: "",
-          contactNumber: "",
-          address: "",
-          amount: ""
-        };
-
-        // Redirect to profile after a short delay
-        setTimeout(() => {
-          this.$router.push('/profile');
-        }, 2000);
-      } catch (error) {
-        console.error('Error processing Cash on Delivery order:', error);
-        this.showNotificationMessage('Error processing order. Please try again.');
-      }
-    },
-    goToDashboard() {
-      this.$router.push("/dashboard");
-    },
-    goToProfile() {
-      this.$router.push("/profile");
-    },
-    logout() {
-      localStorage.removeItem("loggedInUserId");
-      this.$router.push("/login");
-    },
     openPaymentOptions() {
       this.showPaymentModal = true;
     },
+
     closePaymentModal() {
       this.showPaymentModal = false;
     },
-    selectPayment(method) {
-      this.selectedPayment = method;
-      if (method === "Gcash") {
-        this.gcashDetails.amount = this.cartTotal;
-        this.showPaymentModal = false;
-      } else if (method === "Cash on Delivery") {
-        this.codDetails.amount = this.cartTotal;
-        this.showPaymentModal = false;
+
+    selectPayment(paymentMethod) {
+      console.log('Payment method selected:', paymentMethod);
+      this.selectedPayment = paymentMethod;
+      this.showPaymentModal = false;
+    },
+
+    cancelPayment() {
+      this.selectedPayment = null;
+      this.gcashDetails = { name: "", address: "", accountNumber: "09261961756", amount: "" };
+      this.codDetails = { fullName: "", contactNumber: "", address: "", amount: "" };
+      this.showNotificationMessage('Payment cancelled');
+    },
+
+    async submitGcashPayment() {
+      if (!this.gcashDetails.name || !this.gcashDetails.address || !this.gcashDetails.accountNumber) {
+        this.showNotificationMessage('Please fill in all required fields');
+        return;
+      }
+
+      try {
+        // Save order to Firebase Firestore
+        await this.saveOrderToHistory();
+        this.showNotificationMessage('Order placed successfully');
+        this.gcashDetails = { name: "", address: "", accountNumber: "09261961756", amount: "" };
+        this.selectedPayment = null;
+      } catch (error) {
+        console.error('Error placing Gcash order:', error);
+        this.showNotificationMessage('Error placing order');
       }
     },
+
+    async submitCashOnDeliveryPayment() {
+      if (!this.codDetails.fullName || !this.codDetails.contactNumber || !this.codDetails.address) {
+        this.showNotificationMessage('Please fill in all required fields');
+        return;
+      }
+
+      try {
+        // Save order to Firebase Firestore
+        await this.saveOrderToHistory();
+        this.showNotificationMessage('Order placed successfully');
+        this.codDetails = { fullName: "", contactNumber: "", address: "", amount: "" };
+        this.selectedPayment = null;
+      } catch (error) {
+        console.error('Error placing COD order:', error);
+        this.showNotificationMessage('Error placing order');
+      }
+    },
+
     async saveOrderToHistory() {
-  try {
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser || !currentUser.email) {
-      throw new Error('No authenticated user found');
-    }
+      try {
+        const orderDetails = {
+          items: this.cartItems,
+          totalAmount: this.cartTotal,
+          paymentMethod: this.selectedPayment,
+          user: authService.getCurrentUser().email,
+          date: new Date().toISOString()
+        };
 
-    // Debugging logs
-    console.log('Gcash Details:', this.gcashDetails);
-    console.log('Gcash Full Name:', this.gcashDetails.name);
-    console.log('Selected Payment Method:', this.selectedPayment);
-
-    const order = {
-      items: this.cartItems.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price
-      })),
-      total: this.cartTotal,
-      date: new Date().toISOString(),
-      paymentMethod: this.selectedPayment,
-      paymentDetails: this.selectedPayment === 'Gcash' 
-  ? {
-      fullName: this.gcashDetails.name,
-      address: this.gcashDetails.address,
-      accountNumber: this.gcashDetails.accountNumber
-    }
-  : this.selectedPayment === 'Cash on Delivery'
-  ? {
-      fullName: this.codDetails.fullName,
-      contactNumber: this.codDetails.contactNumber,
-      address: this.codDetails.address,
-      amount: this.codDetails.amount
-    }
-  : null
-    };
-
-    // Get existing orders or initialize empty object
-    const allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
-    
-    // Initialize array for this user if it doesn't exist
-    if (!allOrders[currentUser.email]) {
-      allOrders[currentUser.email] = [];
-    }
-
-    // Add new order to the beginning of the array
-    allOrders[currentUser.email].unshift(order);
-    
-    // Save back to localStorage
-    localStorage.setItem('allOrders', JSON.stringify(allOrders));
-    
-    // Trigger storage event for real-time updates
-    window.dispatchEvent(new Event('storage'));
-    
-    console.log('Order saved successfully for user:', currentUser.email);
-  } catch (error) {
-    console.error('Error saving order:', error);
-    throw error;
-  }
-},
-    formatDate(date) {
-      const dateObj = new Date(date);
-      return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        // Save the order to Firebase Firestore
+        const orderRef = await addDoc(collection(db, 'orders'), orderDetails);
+        console.log('Order saved to Firestore:', orderRef.id);
+      } catch (error) {
+        console.error('Error saving order to Firestore:', error);
+        throw new Error('Failed to save order');
+      }
     },
-    validateContactNumber() {
-      this.codDetails.contactNumber = this.codDetails.contactNumber.replace(/[^0-9]/g, '');
-    },
+
     showNotificationMessage(message) {
-      // Clear any existing timeout
+      this.notificationMessage = message;
+      this.showNotification = true;
       if (this.notificationTimeout) {
         clearTimeout(this.notificationTimeout);
       }
-      
-      // Set message and show notification
-      this.notificationMessage = message;
-      this.showNotification = true;
-      
-      // Hide notification after 2 seconds
       this.notificationTimeout = setTimeout(() => {
         this.showNotification = false;
-      }, 2000);
-    },
-    cancelPayment() {
-      // Reset payment selection
-      this.selectedPayment = null;
-      
-      // Clear payment details
-      this.gcashDetails = {
-        name: "",
-        address: "",
-        accountNumber: "09261961756", // Fixed account number
-        amount: ""
-      };
-      
-      this.codDetails = {
-        fullName: "",
-        contactNumber: "",
-        address: "",
-        amount: ""
-      };
-      
-      // Close any open payment modals
-      this.showPaymentModal = false;
-    },
+      }, 3000);
+    }
   }
 };
 </script>
+
+
+
 
 <style scoped>
 .navbar {

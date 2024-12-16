@@ -9,13 +9,13 @@
       </div>
     </nav>
     <div class="dashboard-content">
-      <div class="personal-info">
+      <div class="personal-info" v-if="user">
         <div class="profile-container">
           <h2 style="text-align: center;">Personal Information</h2>
           <div class="image-container">
+            <!-- Use a placeholder image or any image URL stored in Firestore -->
             <img :src="profilePicture" alt="Profile Image" class="profile-image" />
-            <label for="file-input" class="upload-label">Change Profile Picture</label>
-            <input type="file" id="file-input" @change="onFileChange" accept="image/*" style="display: none;" />
+            <!-- You can add an upload button here later if needed -->
           </div>
           <div class="info-details">
             <p class="info-item"><strong><span class="highlight">Name:</span></strong> {{ user.name }}</p>
@@ -35,6 +35,10 @@
             </div>
           </div>
         </div>
+      </div>
+      <!-- Loading state -->
+      <div v-else class="loading">
+        <p>Loading user profile...</p>
       </div>
 
       <div class="purchase-history-section">
@@ -117,11 +121,9 @@
   </div>
 </template>
 
-
 <script>
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import NavbarComponent from './NavbarComponent.vue';
 import authService from '../services/authService';
 
@@ -131,7 +133,7 @@ export default {
   },
   data() {
     return {
-      profilePicture: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
+      profilePicture: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png', // Placeholder image
       isEditProfileModalOpen: false,
       user: null,
       editedUser: {
@@ -188,32 +190,6 @@ export default {
       } catch (error) {
         console.error('Error updating profile: ', error);
         this.showNotificationMessage('Error updating profile');
-      }
-    },
-
-    onFileChange(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const storageRef = ref(getStorage(), `profilePictures/${getAuth().currentUser.uid}`);
-      uploadBytes(storageRef, file).then((snapshot) => {
-        getDownloadURL(snapshot.ref).then((downloadURL) => {
-          this.profilePicture = downloadURL;
-          this.updateProfilePicture(downloadURL);
-        });
-      });
-    },
-
-    async updateProfilePicture(downloadURL) {
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser || !currentUser.email) {
-        this.showNotificationMessage('Error: User not found');
-        return;
-      }
-
-      try {
-        await setDoc(doc(getFirestore(), 'users', currentUser.email), { profilePicture: downloadURL }, { merge: true });
-      } catch (error) {
-        console.error('Error updating profile picture: ', error);
       }
     },
 
@@ -277,6 +253,7 @@ export default {
   }
 };
 </script>
+
 
 
 
