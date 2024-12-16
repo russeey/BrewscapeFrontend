@@ -117,7 +117,11 @@
   </div>
 </template>
 
+
 <script>
+import { getAuth } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import NavbarComponent from './NavbarComponent.vue';
 import authService from '../services/authService';
 
@@ -146,122 +150,105 @@ export default {
   },
 
   created() {
-    window.addEventListener('storage', this.handleStorageChange);
-    this.user = this.getUserProfile();
+    this.loadUserProfile();
     this.loadOrderHistory();
-    this.loadProfilePicture();
-  },
-
-  beforeDestroy() {
-    // Remove storage event listener
-    window.removeEventListener('storage', this.handleStorageChange);
-  },
-
-  watch: {
-    $route: {
-      immediate: true,
-      handler() {
-        this.loadOrderHistory();
-      }
-    }
   },
 
   methods: {
-    handleStorageChange(event) {
-      if (event.key === 'allOrders') {
-        this.loadOrderHistory();
-      }
-    },
-    loadProfilePicture() {
-      const email = authService.getCurrentUser()?.email;
-      if (!email) {
-        console.warn('No email found, cannot load profile picture.');
+    async loadUserProfile() {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || !currentUser.email) {
+        console.warn('No authenticated user found');
         return;
       }
-      console.log('Attempting to load profile picture for email:', email);
-      const savedPicture = localStorage.getItem(`profile_${email}`);
-      if (savedPicture) {
-        this.profilePicture = savedPicture;
-        console.log('Profile picture loaded successfully from localStorage.');
+      const docRef = doc(getFirestore(), 'users', currentUser.email);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        this.user = docSnap.data();
+        this.profilePicture = this.user.profilePicture || this.profilePicture;
       } else {
-        console.warn('No profile picture found in localStorage for email:', email);
+        console.warn('No profile found for user:', currentUser.email);
+        this.user = this.getEmptyProfile();
       }
     },
 
-    goToDashboard() {
-      this.$router.push("/dashboard"); 
-      this.loadProfilePicture();
-    },
-    goToCart() {
-      this.$router.push("/cart"); 
-      this.loadProfilePicture();
-    },
-    logout() {
-      localStorage.removeItem('loggedInUserId');
-      this.$router.push('/login');
-    },
-    openEditProfileModal() {
-      this.editedUser = { ...this.user };
-      this.isEditProfileModalOpen = true;
-      this.showNotificationMessage('Please update your personal information to ensure accurate delivery.');
-    },
-    closeEditProfileModal() {
-      this.isEditProfileModalOpen = false;
-    },
-    updateProfile() {
-      try {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || !currentUser.email) {
-          this.showNotificationMessage('Error: User not found');
-          return;
-        }
+    async updateProfile() {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || !currentUser.email) {
+        this.showNotificationMessage('Error: User not found');
+        return;
+      }
 
-        // Get all user profiles
-        const allProfiles = JSON.parse(localStorage.getItem('allUserProfiles')) || {};
-        
-        // Update the profile for current user
-        allProfiles[currentUser.email] = { ...this.editedUser };
-        
-        // Save back to localStorage
-        localStorage.setItem('allUserProfiles', JSON.stringify(allProfiles));
-        
-        // Update local user object
+      try {
+        await setDoc(doc(getFirestore(), 'users', currentUser.email), this.editedUser);
         this.user = { ...this.editedUser };
-        
-        // Close modal and show success message
         this.closeEditProfileModal();
         this.showNotificationMessage('Profile updated successfully!');
       } catch (error) {
-        console.error('Error updating profile:', error);
+        console.error('Error updating profile: ', error);
         this.showNotificationMessage('Error updating profile');
       }
     },
 
-    getUserProfile() {
-      try {
-        // Get the current user's email from auth service
-        const currentUserEmail = authService.getCurrentUser()?.email;
-        if (!currentUserEmail) {
-          console.warn('No user email found');
-          return this.getEmptyProfile();
-        }
+    onFileChange(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const storageRef = ref(getStorage(), `profilePictures/${getAuth().currentUser.uid}`);
+      uploadBytes(storageRef, file).then((snapshot) => {
+        getDownloadURL(snapshot.ref).then((downloadURL) => {
+          this.profilePicture = downloadURL;
+          this.updateProfilePicture(downloadURL);
+        });
+      });
+    },
 
-        // Get all user profiles
-        const allProfiles = JSON.parse(localStorage.getItem('allUserProfiles') || '{}');
-        
-        // Get current user's profile
-        const userProfile = allProfiles[currentUserEmail];
-        
-        if (!userProfile) {
-          console.warn('No profile found for user:', currentUserEmail);
-          return this.getEmptyProfile();
-        }
-
-        return userProfile;
-      } catch (error) {
-        console.error('Error getting user profile:', error);
-        return this.getEmptyProfile();
+    async updateProfilePicture(downloadURL) {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || !currentUser.email) {
+        this.showNotificationMessage('Error: User not found');
+        return;
       }
+
+      try {
+        await setDoc(doc(getFirestore(), 'users', currentUser.email), { profilePicture: downloadURL }, { merge: true });
+      } catch (error) {
+        console.error('Error updating profile picture: ', error);
+      }
+    },
+
+    openEditProfileModal() {
+      this.editedUser = { ...this.user };
+      this.isEditProfileModalOpen = true;
+    },
+
+    closeEditProfileModal() {
+      this.isEditProfileModalOpen = false;
+    },
+
+    showNotificationMessage(message) {
+      this.notificationMessage = message;
+      this.showNotification = true;
+      if (this.notificationTimeout) clearTimeout(this.notificationTimeout);
+      this.notificationTimeout = setTimeout(() => {
+        this.showNotification = false;
+      }, 3000);
+    },
+
+    formatDate(dateString) {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    },
+
+    loadOrderHistory() {
+      // Load the user's order history from Firestore if needed
+      this.orderHistory = []; // Implement the order loading logic
+    },
+
+    filterInput(event) {
+      const input = event.target;
+      const pattern = /[^0-9]/g;
+      input.value = input.value.replace(pattern, '');
     },
 
     getEmptyProfile() {
@@ -275,91 +262,23 @@ export default {
       };
     },
 
-    loadOrderHistory() {
-      try {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || !currentUser.email) {
-          console.warn('No authenticated user found');
-          this.orderHistory = [];
-          return;
-        }
-
-        // Get all orders from localStorage
-        const allOrders = JSON.parse(localStorage.getItem('allOrders')) || {};
-        
-        // Get orders for current user
-        const userOrders = allOrders[currentUser.email] || [];
-        
-        // Sort orders by date, most recent first
-        this.orderHistory = userOrders.sort((a, b) => 
-          new Date(b.date) - new Date(a.date)
-        );
-
-        console.log('Loaded order history for:', currentUser.email);
-        console.log('Number of orders:', this.orderHistory.length);
-      } catch (error) {
-        console.error('Error loading orders:', error);
-        this.orderHistory = [];
-      }
+    logout() {
+      authService.logout();
+      this.$router.push('/login');
     },
 
-    formatDate(dateString) {
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      } catch (error) {
-        return dateString;
-      }
+    goToCart() {
+      this.$router.push('/cart');
     },
-    showNotificationMessage(message) {
-      // Clear any existing timeout
-      if (this.notificationTimeout) {
-        clearTimeout(this.notificationTimeout);
-      }
-      
-      // Set message and show notification
-      this.notificationMessage = message;
-      this.showNotification = true;
-      
-      // Hide notification after 2 seconds
-      this.notificationTimeout = setTimeout(() => {
-        this.showNotification = false;
-      }, 2000);
-    },
-    async onFileChange(event) {
-      const file = event.target.files[0];
-      if (!file) {
-        console.warn('No file selected.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const email = authService.getCurrentUser()?.email;
-        if (!email) {
-          console.warn('No email found, cannot save profile picture.');
-          return;
-        }
-        console.log('Attempting to save profile picture for email:', email);
-        this.profilePicture = e.target.result;
-        localStorage.setItem(`profile_${email}`, e.target.result);
-        console.log('Profile picture saved successfully to localStorage.');
-        this.showNotificationMessage('Profile picture updated successfully!');
-      };
-      reader.readAsDataURL(file);
-    },
-    filterInput(event) {
-      const input = event.target;
-      input.value = input.value.replace(/[^0-9]/g, '');
+
+    goToDashboard() {
+      this.$router.push('/dashboard');
     }
   }
 };
 </script>
+
+
 
 <style scoped>
 .navbar {

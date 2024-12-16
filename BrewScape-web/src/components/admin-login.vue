@@ -72,7 +72,7 @@ export default {
       
       loading.value = true;
       errorMessage.value = '';
-      
+        
       try {
         if (email.value === validAdminEmail && password.value === validAdminPassword) {
           // Set adminId in localStorage for authentication
