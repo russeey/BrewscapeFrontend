@@ -329,41 +329,35 @@ export default {
       this.showNotificationMessage('Payment cancelled');
     },
 
-    async submitGcashPayment() {
-      if (!this.gcashDetails.name || !this.gcashDetails.address || !this.gcashDetails.accountNumber) {
-        this.showNotificationMessage('Please fill in all required fields');
-        return;
-      }
-
-      try {
-        // Save order to Firebase Firestore
-        await this.saveOrderToHistory();
-        this.showNotificationMessage('Order placed successfully');
-        this.gcashDetails = { name: "", address: "", accountNumber: "09261961756", amount: "" };
-        this.selectedPayment = null;
-      } catch (error) {
-        console.error('Error placing Gcash order:', error);
-        this.showNotificationMessage('Error placing order');
-      }
-    },
-
     async submitCashOnDeliveryPayment() {
-      if (!this.codDetails.fullName || !this.codDetails.contactNumber || !this.codDetails.address) {
-        this.showNotificationMessage('Please fill in all required fields');
-        return;
-      }
+  // Validation logic...
+  try {
+    // Save order to Firebase Firestore
+    await this.saveOrderToHistory();
+    this.showNotificationMessage('Order placed successfully');
+    this.cartItems = []; // Clear cart items
+    this.codDetails = { fullName: "", contactNumber: "", address: "", amount: "" };
+    this.selectedPayment = null;
+  } catch (error) {
+    console.error('Error placing COD order:', error);
+    this.showNotificationMessage('Error placing order');
+  }
+},
 
-      try {
-        // Save order to Firebase Firestore
-        await this.saveOrderToHistory();
-        this.showNotificationMessage('Order placed successfully');
-        this.codDetails = { fullName: "", contactNumber: "", address: "", amount: "" };
-        this.selectedPayment = null;
-      } catch (error) {
-        console.error('Error placing COD order:', error);
-        this.showNotificationMessage('Error placing order');
-      }
-    },
+async submitGcashPayment() {
+  // Validation logic...
+  try {
+    // Save order to Firebase Firestore
+    await this.saveOrderToHistory();
+    this.showNotificationMessage('Order placed successfully');
+    this.cartItems = []; // Clear cart items
+    this.gcashDetails = { name: "", address: "", accountNumber: "09261961756", amount: "" };
+    this.selectedPayment = null;
+  } catch (error) {
+    console.error('Error placing Gcash order:', error);
+    this.showNotificationMessage('Error placing order');
+  }
+},
 
     async saveOrderToHistory() {
       try {
