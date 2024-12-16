@@ -36,7 +36,7 @@
       <p v-if="isLockedOut" class="error">
         Please wait {{ countdown }} seconds before trying again.
       </p>
-      <div class="signup-section">
+      <div class="login-section">
         <p>
           JOIN US AND EXPLORE LOCAL COFFEE SHOP HERE<br /><span>IN CDO</span>
         </p>
@@ -68,13 +68,29 @@ export default {
 
     const loginUser = async () => {
       if (isLockedOut.value) return;
-      
+
       loading.value = true;
       errorMessage.value = '';
-      
+
       try {
-        await authService.login(email.value, password.value);
-        router.push('/dashboard');
+        // Call the signIn method from authService
+        const user = await authService.signIn(email.value, password.value);
+
+        // Fetch user profile after login to get role
+        const profile = await authService.getUserProfile();
+        user.role = profile?.role; // Assuming `role` is part of user data in Firestore
+
+        // Redirect to the appropriate dashboard based on role
+        if (user.role === 'admin') {
+          router.push('/admin-dashboard');
+        } else if (user.role === 'owner') {
+          router.push('/owner-dashboard');
+        } else {
+          router.push('/dashboard');
+        }
+
+        // Reset login attempts after a successful login
+        loginAttempts.value = 0;
       } catch (error) {
         handleLoginError(error);
       } finally {
@@ -84,12 +100,12 @@ export default {
 
     const handleLoginError = (error) => {
       loginAttempts.value++;
-      
+
       if (loginAttempts.value >= 3) {
         isLockedOut.value = true;
         startCountdown();
       }
-      
+
       // Replace Firebase error with a generic message
       errorMessage.value = error.code === 'auth/invalid-credential' 
         ? 'Incorrect Username or Password' 
@@ -111,26 +127,17 @@ export default {
       isLockedOut.value = false;
       loginAttempts.value = 0;
       countdown.value = 0;
+      errorMessage.value = ''; // Clear error message after lockout resets
     };
 
-    const loginAsAdmin = async () => {
+    const loginAsAdmin = () => {
       if (isLockedOut.value) return;
-      
-      try {
-        router.push('/admin-login');
-      } catch (error) {
-        errorMessage.value = 'Error accessing admin login';
-      }
+      router.push('/admin-login');
     };
 
-    const loginAsOwner = async () => {
+    const loginAsOwner = () => {
       if (isLockedOut.value) return;
-      
-      try {
-        router.push('/owner-login');
-      } catch (error) {
-        errorMessage.value = 'Error accessing owner login';
-      }
+      router.push('/owner-login');
     };
 
     return {
@@ -148,6 +155,9 @@ export default {
   }
 };
 </script>
+
+
+
 
 <style scoped>
 .login-page {
@@ -248,12 +258,12 @@ button:hover:not([disabled]) {
   background-color: #4d2c16;
 }
 
-.signup-section {
+.login-section {
   margin-top: 20px;
   color: #4d2c16;
 }
 
-.signup-section span {
+.login-section span {
   font-weight: bold;
 }
 

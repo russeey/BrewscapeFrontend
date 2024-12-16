@@ -22,19 +22,16 @@ const routes = [
     path: "/login",
     name: "Login",
     component: Login,
-    meta: { requiresGuest: true },
   },
   {
     path: "/signup",
     name: "SignUp",
     component: SignUp,
-    meta: { requiresGuest: true },
   },
   {
     path: "/admin-login",
     name: "AdminLogin",
     component: AdminLogin,
-    meta: { requiresGuest: true },
   },
   {
     path: "/admin-dashboard",
@@ -46,7 +43,6 @@ const routes = [
     path: "/owner-login",
     name: "OwnerLogin",
     component: OwnerLogin,
-    meta: { requiresGuest: true },
   },
   {
     path: "/owner-dashboard",
@@ -83,19 +79,40 @@ router.beforeEach(async (to, from, next) => {
   const isAuthenticated = authService.isAuthenticated();
   const user = isAuthenticated ? await authService.getUserProfile() : null;
 
-  // Handle authentication
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login');
-  } else if (to.meta.requiresGuest && isAuthenticated) {
-    next('/dashboard');
-  } else if (to.meta.role && user?.role !== to.meta.role) {
-    // Role-based redirection
-    if (user?.role === "admin") next('/admin-dashboard');
-    else if (user?.role === "owner") next('/owner-dashboard');
-    else next('/dashboard');
-  } else {
-    next();
+  // Avoiding unnecessary redirects
+  if (to.path === from.path) {
+    return next(); // Prevent navigating to the same route
   }
+
+  // Authentication check
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return next('/login'); // Redirect to login if not authenticated
+  }
+
+  // Role-based redirection
+  if (to.meta.role && user && user.role !== to.meta.role) {
+    // Ensure the user is redirected to their appropriate dashboard if role mismatches
+    if (user.role === "admin") {
+      return next('/admin-dashboard');
+    }
+    if (user.role === "owner") {
+      return next('/owner-dashboard');
+    }
+    return next('/dashboard'); // Default to user dashboard if role mismatches
+  }
+
+  // If the user is authenticated and tries to access the login page, redirect based on their role
+  if (to.path === '/login' && isAuthenticated) {
+    if (user?.role === "admin") {
+      return next('/admin-dashboard');
+    }
+    if (user?.role === "owner") {
+      return next('/owner-dashboard');
+    }
+    return next('/dashboard'); // Redirect authenticated users to their dashboard
+  }
+
+  next(); // Continue to the route if all checks pass
 });
 
 export default router;
