@@ -1,121 +1,61 @@
 import { auth, db } from "@/firebase.config";
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence,
-} from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 class AuthService {
   constructor() {
     this.user = null;
-    this.authStateListeners = new Set();
-    this.initializeAuth();
+    this.listenForAuthChanges();
   }
 
-  async initializeAuth() {
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      onAuthStateChanged(auth, (user) => {
-        this.user = user;
-        this.notifyListeners(user);
-      });
-    } catch (error) {
-      console.error("Auth initialization error:", error);
-    }
-  }
-
-  async login(email, password) {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async signup(email, password, userData) {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Save additional user data to Firestore
-      if (userData.role === 'admin') {
-        await setDoc(doc(db, "admins", user.uid), {
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          phoneNumber: userData.phoneNumber,
-          location: userData.location,
-          birthday: userData.birthday,
-          gender: userData.gender,
-        });
-      } else {
-        await this.signupUser(userData); // Call the new method for users
-      }
-
-      return user;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async signupUser(userData) {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
-      const user = userCredential.user;
-
-      // Save user data to Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
-        location: userData.location,
-        birthday: userData.birthday,
-        gender: userData.gender,
-      });
-
-      return user;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async logout() {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      throw error;
-    }
+  listenForAuthChanges() {
+    onAuthStateChanged(auth, (user) => {
+      this.user = user; // Updates the current user when auth state changes
+      console.log("Auth state updated:", user);
+    });
   }
 
   isAuthenticated() {
-    return !!this.user;
+    return !!this.user; // Returns true if a user is logged in
   }
 
   getCurrentUser() {
+    if (!this.user) {
+      throw new Error("No user is currently logged in.");
+    }
+    return this.user; // Returns the current user object
+  }
+
+  async signup(email, password, userData) {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    const userDoc = userData.role === "admin"
+      ? doc(db, "admins", user.uid)
+      : doc(db, "users", user.uid);
+
+    await setDoc(userDoc, { ...userData, email });
+    return user;
+  }
+
+  async signIn(email, password) {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    this.user = userCredential.user;
     return this.user;
   }
 
-  addAuthStateListener(listener) {
-    this.authStateListeners.add(listener);
-    // Immediately notify the new listener of the current auth state
-    listener(this.user);
+  async logout() {
+    await signOut(auth);
+    this.user = null;
   }
 
-  removeAuthStateListener(listener) {
-    this.authStateListeners.delete(listener);
-  }
-
-  notifyListeners(user) {
-    this.authStateListeners.forEach((listener) => listener(user));
+  async getUserProfile() {
+    if (!this.user) throw new Error("No user is logged in.");
+    const userDocRef = doc(db, "users", this.user.uid);
+    const userDoc = await getDoc(userDocRef);
+    return userDoc.exists() ? userDoc.data() : null;
   }
 }
 
-// Create a singleton instance
 const authService = new AuthService();
 export default authService;

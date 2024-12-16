@@ -5,7 +5,6 @@
         <div class="logo-section">
           <img src="@/assets/logo.png" alt="Logo" class="logo" />
           <span>BrewScape</span>
-          <ul class="nav-links-left"></ul>
         </div>
       </div>
     </header>
@@ -79,7 +78,7 @@
         </div>
         <p class="policy-text">
           By clicking Sign Up, you agree to our
-          <a href="#">Terms</a>, <a href="#">Privacy Policy</a> and
+          <a href="#">Terms</a>, <a href="#">Privacy Policy</a>, and
           <a href="#">Cookies Policy</a>.
         </p>
         <button type="submit" :disabled="loading">Sign Up</button>
@@ -115,7 +114,6 @@ export default {
       loading.value = true;
       errorMessage.value = '';
 
-      // Validate secret passkey if role is admin
       if (role.value === 'admin' && secretPasskey.value !== 'Shadowaxe') {
         errorMessage.value = 'Invalid secret passkey for admin signup.';
         loading.value = false;
@@ -123,11 +121,14 @@ export default {
       }
 
       try {
-        console.log("Attempting to sign up user with email:", email.value);
-        const user = await authService.signup(email, password, {
+        console.log("Signup data:", {
+          email: email.value,
+          password: password.value, // Ensure password is logged
+        });
+
+        const user = await authService.signup(email.value, password.value, {
           firstName: firstName.value,
           lastName: lastName.value,
-          email: email.value,
           phoneNumber: phoneNumber.value,
           location: location.value,
           birthday: birthday.value,
@@ -135,11 +136,10 @@ export default {
           role: role.value,
         });
 
-        // Redirect to the dashboard after successful signup
         router.push('/dashboard');
       } catch (error) {
         console.error("Signup error:", error);
-        errorMessage.value = error.message;
+        errorMessage.value = error.message || 'An error occurred during signup.';
       } finally {
         loading.value = false;
       }
@@ -163,9 +163,6 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-</style>
 
 <style scoped>
 .signup-page {
