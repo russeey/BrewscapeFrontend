@@ -47,7 +47,6 @@ const router = createRouter({
       path: "/admin-dashboard",
       name: "AdminDashboard",
       component: AdminDashboard,
-      meta: { requiresAuth: true }
     },
     {
       path: "/signup",

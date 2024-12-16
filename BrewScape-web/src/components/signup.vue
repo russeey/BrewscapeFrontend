@@ -33,23 +33,25 @@
           placeholder="Email Address"
           required
         />
-        <input
-          type="text"
-          v-model="phoneNumber"
-          placeholder="Phone Number"
-          @input="validatePhoneNumber"
-          required
-        />
+        <div v-if="role === 'user'">
+          <input
+            type="text"
+            v-model="phoneNumber"
+            placeholder="Phone Number"
+            @input="validatePhoneNumber"
+            required
+          />
+          <input
+            type="text"
+            v-model="location"
+            placeholder="Location"
+            required
+          />
+        </div>
         <input
           type="password"
           v-model="password"
           placeholder="Password"
-          required
-        />
-        <input
-          type="text"
-          v-model="location"
-          placeholder="Location"
           required
         />
         <div class="birth-gender">
@@ -60,6 +62,20 @@
             <option value="Female">Female</option>
             <option value="Other">Other</option>
           </select>
+        </div>
+        <label for="role">Select Role:</label>
+        <select v-model="role" required>
+          <option value="" disabled>Select your role</option>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <div v-if="role === 'admin'">
+          <input
+            type="password"
+            v-model="secretPasskey"
+            placeholder="Secret Passkey"
+            required
+          />
         </div>
         <p class="policy-text">
           By clicking Sign Up, you agree to our
@@ -90,52 +106,43 @@ export default {
     const location = ref('');
     const birthday = ref('');
     const gender = ref('');
+    const role = ref('');
+    const secretPasskey = ref('');
     const errorMessage = ref('');
     const loading = ref(false);
 
     const handleSignup = async () => {
       loading.value = true;
       errorMessage.value = '';
-      
-      try {
-        await authService.signup(
-          email.value,
-          password.value,
-          firstName.value,
-          lastName.value,
-          phoneNumber.value,
-          location.value
-        );
 
-        // Save user profile information to localStorage with email as key
-        const userProfile = {
-          name: `${firstName.value} ${lastName.value}`,
+      // Validate secret passkey if role is admin
+      if (role.value === 'admin' && secretPasskey.value !== 'Shadowaxe') {
+        errorMessage.value = 'Invalid secret passkey for admin signup.';
+        loading.value = false;
+        return;
+      }
+
+      try {
+        console.log("Attempting to sign up user with email:", email.value);
+        const user = await authService.signup(email, password, {
+          firstName: firstName.value,
+          lastName: lastName.value,
           email: email.value,
+          phoneNumber: phoneNumber.value,
           location: location.value,
-          contractNumber: phoneNumber.value,
           birthday: birthday.value,
-          gender: gender.value
-        };
-        
-        // Get existing profiles or initialize empty object
-        const allProfiles = JSON.parse(localStorage.getItem('allUserProfiles') || '{}');
-        
-        // Add/Update this user's profile
-        allProfiles[email.value] = userProfile;
-        
-        // Save back to localStorage
-        localStorage.setItem('allUserProfiles', JSON.stringify(allProfiles));
-        
+          gender: gender.value,
+          role: role.value,
+        });
+
+        // Redirect to the dashboard after successful signup
         router.push('/dashboard');
       } catch (error) {
-        errorMessage.value = error.message || 'An error occurred during signup';
+        console.error("Signup error:", error);
+        errorMessage.value = error.message;
       } finally {
         loading.value = false;
       }
-    };
-
-    const validatePhoneNumber = () => {
-      phoneNumber.value = phoneNumber.value.replace(/[^0-9]/g, '');
     };
 
     return {
@@ -147,12 +154,13 @@ export default {
       location,
       birthday,
       gender,
+      role,
+      secretPasskey,
       errorMessage,
       loading,
       handleSignup,
-      validatePhoneNumber
     };
-  }
+  },
 };
 </script>
 
@@ -165,7 +173,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 110vh;
   background-size: cover;
   background-position: center;
 }

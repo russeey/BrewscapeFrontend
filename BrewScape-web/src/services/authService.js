@@ -1,12 +1,13 @@
-import { auth } from "@/firebase.config";
+import { auth, db } from "@/firebase.config";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
 } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 class AuthService {
   constructor() {
@@ -36,10 +37,49 @@ class AuthService {
     }
   }
 
-  async signup(email, password) {
+  async signup(email, password, userData) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      const user = userCredential.user;
+
+      // Save additional user data to Firestore
+      if (userData.role === 'admin') {
+        await setDoc(doc(db, "admins", user.uid), {
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+          phoneNumber: userData.phoneNumber,
+          location: userData.location,
+          birthday: userData.birthday,
+          gender: userData.gender,
+        });
+      } else {
+        await this.signupUser(userData); // Call the new method for users
+      }
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async signupUser(userData) {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+      const user = userCredential.user;
+
+      // Save user data to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        phoneNumber: userData.phoneNumber,
+        location: userData.location,
+        birthday: userData.birthday,
+        gender: userData.gender,
+      });
+
+      return user;
     } catch (error) {
       throw error;
     }
@@ -72,7 +112,7 @@ class AuthService {
   }
 
   notifyListeners(user) {
-    this.authStateListeners.forEach(listener => listener(user));
+    this.authStateListeners.forEach((listener) => listener(user));
   }
 }
 

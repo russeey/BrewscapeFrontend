@@ -28,9 +28,9 @@
         <div class="check-box-div">
           <a href="#">Forgot Password?</a>
         </div>
-        <button type="submit" :disabled="loading || isLockedOut">
-          Sign In as Administrator
-        </button>
+          <button type="submit" :disabled="loading || isLockedOut">
+            Sign In as Administrator
+          </button>
       </form>
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
       <p v-if="isLockedOut" class="error">
