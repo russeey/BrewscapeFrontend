@@ -78,7 +78,8 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue';
-import { db, collection, getDocs } from '../firebase.config'; // Firebase imports
+import { getAuth } from 'firebase/auth';
+import { db, collection, query, where, getDocs } from '../firebase.config'; // Firebase imports
 
 export default {
   name: 'OwnerDashboard',
@@ -91,18 +92,32 @@ export default {
     const formOrder = reactive({ id: null, itemName: '', quantity: '', status: '' });
 
     onMounted(async () => {
-      // Authenticate the owner
-      isAuthenticated.value = !!localStorage.getItem('ownerId');
+      // Get current authenticated user
+      const auth = getAuth();
+      const user = auth.currentUser;
 
-      // Fetch orders from Firestore
-      const ordersSnapshot = await getDocs(collection(db, "orders"));
-      orders.value = ordersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      // Check if the user is authenticated
+      if (user) {
+        // Check if the user is an owner
+        const ownerRef = query(collection(db, 'owners'), where('email', '==', user.email));
+        const ownerSnapshot = await getDocs(ownerRef);
 
-      // Calculate total sales from orders
-      totalSales.value = orders.value.reduce((sum, order) => sum + order.totalAmount, 0);
+        if (!ownerSnapshot.empty) {
+          isAuthenticated.value = true;
+
+          // Fetch orders for the authenticated owner
+          const ordersSnapshot = await getDocs(collection(db, "orders"));
+          orders.value = ordersSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+
+          // Calculate total sales from orders
+          totalSales.value = orders.value.reduce((sum, order) => sum + order.totalAmount, 0);
+        } else {
+          isAuthenticated.value = false;
+        }
+      }
     });
 
     const openAddOrderModal = () => {
@@ -154,6 +169,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .ownerDashboard {

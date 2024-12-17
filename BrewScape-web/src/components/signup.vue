@@ -66,7 +66,19 @@
           <option value="" disabled>Select your role</option>
           <option value="user">User</option>
           <option value="admin">Admin</option>
+          <option value="owner">Owner</option>
         </select>
+
+        <!-- Owner-specific fields -->
+        <div v-if="role === 'owner'">
+          <input
+            type="password"
+            v-model="ownerPasskey"
+            placeholder="Enter Owner Passkey"
+            required
+          />
+        </div>
+
         <div v-if="role === 'admin'">
           <input
             type="password"
@@ -75,6 +87,7 @@
             required
           />
         </div>
+
         <p class="policy-text">
           By clicking Sign Up, you agree to our
           <a href="#">Terms</a>, <a href="#">Privacy Policy</a>, and
@@ -107,6 +120,7 @@ export default {
     const gender = ref('');
     const birthday = ref('');
     const role = ref('user');
+    const ownerPasskey = ref('');
     const secretPasskey = ref('');
     const loading = ref(false);
     const errorMessage = ref('');
@@ -127,7 +141,7 @@ export default {
         );
         const user = userCredential.user;
 
-        // Determine user role and set data in Firestore
+        // Prepare user data based on role
         const userData = {
           firstName: firstName.value,
           lastName: lastName.value,
@@ -139,15 +153,28 @@ export default {
           role: role.value,
         };
 
-        if (role.value === 'admin') {
+        if (role.value === 'user') {
+          // Add user-specific fields
+          userData.phoneNumber = phoneNumber.value;
+          userData.location = location.value;
+        } else if (role.value === 'admin') {
+          // Validate admin passkey
           if (secretPasskey.value !== 'Shadowaxe') {
             throw new Error('Invalid passkey for admin role');
           }
           userData.secretPasskey = secretPasskey.value;
+        } else if (role.value === 'owner') {
+          // Validate owner passkey
+          const validOwnerPasskey = 'OwnerPasskey123'; // Define your secure passkey
+          if (ownerPasskey.value !== validOwnerPasskey) {
+            throw new Error('Invalid passkey for owner role');
+          }
+          userData.ownerPasskey = ownerPasskey.value;
         }
 
-        await setDoc(doc(db, role.value === 'admin' ? 'admins' : 'users', user.uid), userData);
-        router.push(role.value === 'admin' ? '/admin-login' : '/login');
+        // Store user data in Firestore under the appropriate collection
+        await setDoc(doc(db, role.value === 'owner' ? 'owners' : role.value === 'admin' ? 'admins' : 'users', user.uid), userData);
+        router.push(role.value === 'owner' ? '/owner-dashboard' : role.value === 'admin' ? '/admin-dashboard' : '/dashboard');
       } catch (error) {
         errorMessage.value = error.message;
       } finally {
@@ -165,6 +192,7 @@ export default {
       gender,
       birthday,
       role,
+      ownerPasskey,
       secretPasskey,
       loading,
       errorMessage,
@@ -173,6 +201,7 @@ export default {
   },
 };
 </script>
+
 
 
 <style scoped>
