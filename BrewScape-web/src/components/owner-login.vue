@@ -77,7 +77,7 @@ export default {
         if (email.value === validOwnerEmail && password.value === validOwnerPassword) {
           // Set ownerId in localStorage for authentication
           localStorage.setItem('ownerId', 'owner'); // You can set a more secure identifier
-          router.push('/ownerDashboard'); // Redirect to owner dashboard
+          router.push('/owner-dashboard'); // Redirect to owner dashboard
         } else {
           throw new Error('Invalid credentials');
         }

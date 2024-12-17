@@ -5,13 +5,14 @@
         <nav class="navbar">
           <div class="nav-brand">BrewScape</div>
           <div class="nav-links">
-            <button class="nav-btn" @click="goToDashboard">
+            <!-- Use router-link for navigation -->
+            <router-link to="/dashboard" class="nav-btn">
               <i class="fas fa-home"></i> Dashboard
-            </button>
-            <button class="nav-btn" @click="goToProfile">
+            </router-link>
+            <router-link to="/profile" class="nav-btn">
               <i class="fas fa-user"></i> Profile
-            </button>
-            <button class="nav-btn logout" @click="logout">
+            </router-link>
+            <button class="nav-btn logout" @click="goToDashboard">
               <i class="fas fa-sign-out-alt"></i> Back
             </button>
           </div>
@@ -316,11 +317,14 @@ export default {
       this.showPaymentModal = false;
     },
 
-    selectPayment(paymentMethod) {
-      console.log('Payment method selected:', paymentMethod);
-      this.selectedPayment = paymentMethod;
-      this.showPaymentModal = false;
-    },
+    selectPayment(method) {
+  this.selectedPayment = method;
+  if (method === 'Gcash') {
+    this.gcashDetails.amount = this.cartTotal;  // Ensure the GCash amount is set to the cart total
+  } else if (method === 'Cash on Delivery') {
+    this.codDetails.amount = this.cartTotal;
+  }
+},
 
     cancelPayment() {
       this.selectedPayment = null;
@@ -330,14 +334,21 @@ export default {
     },
 
     async submitCashOnDeliveryPayment() {
-  // Validation logic...
   try {
     // Save order to Firebase Firestore
     await this.saveOrderToHistory();
+    
+    // Clear cart items after payment
+    this.cartItems = [];
+    this.saveCartItems(); // Save the cleared cart to localStorage
+    
+    // Show success notification
     this.showNotificationMessage('Order placed successfully');
-    this.cartItems = []; // Clear cart items
     this.codDetails = { fullName: "", contactNumber: "", address: "", amount: "" };
     this.selectedPayment = null;
+
+    // Redirect to Profile page
+    this.$router.push('/profile');
   } catch (error) {
     console.error('Error placing COD order:', error);
     this.showNotificationMessage('Error placing order');
@@ -345,18 +356,37 @@ export default {
 },
 
 async submitGcashPayment() {
-  // Validation logic...
   try {
     // Save order to Firebase Firestore
     await this.saveOrderToHistory();
+    
+    // Clear cart items after payment
+    this.cartItems = [];
+    this.saveCartItems(); // Save the cleared cart to localStorage
+    
+    // Show success notification
     this.showNotificationMessage('Order placed successfully');
-    this.cartItems = []; // Clear cart items
     this.gcashDetails = { name: "", address: "", accountNumber: "09261961756", amount: "" };
     this.selectedPayment = null;
+
+    // Redirect to Profile page
+    this.$router.push('/profile');
   } catch (error) {
     console.error('Error placing Gcash order:', error);
     this.showNotificationMessage('Error placing order');
   }
+},
+
+async saveOrderToHistory(orderDetails) {
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser || !currentUser.email) return;
+
+    const ordersRef = collection(getFirestore(), 'orders');
+    await setDoc(doc(ordersRef, currentUser.email + '_' + new Date().getTime()), {
+        ...orderDetails,
+        userEmail: currentUser.email,
+        date: new Date(),
+    });
 },
 
     async saveOrderToHistory() {
@@ -377,6 +407,7 @@ async submitGcashPayment() {
         throw new Error('Failed to save order');
       }
     },
+    
 
     showNotificationMessage(message) {
       this.notificationMessage = message;

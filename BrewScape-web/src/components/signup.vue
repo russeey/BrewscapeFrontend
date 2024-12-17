@@ -37,7 +37,6 @@
             type="text"
             v-model="phoneNumber"
             placeholder="Phone Number"
-            @input="validatePhoneNumber"
             required
           />
           <input
@@ -91,55 +90,66 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import authService from '../services/authService';
+import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
+import { setDoc, doc } from 'firebase/firestore';
+import { db } from '@/firebase.config';
 
 export default {
-  name: 'SignupPage',
+  name: 'SignUpPage',
   setup() {
     const router = useRouter();
     const firstName = ref('');
     const lastName = ref('');
     const email = ref('');
     const phoneNumber = ref('');
-    const password = ref('');
     const location = ref('');
-    const birthday = ref('');
+    const password = ref('');
     const gender = ref('');
-    const role = ref('');
+    const birthday = ref('');
+    const role = ref('user');
     const secretPasskey = ref('');
-    const errorMessage = ref('');
     const loading = ref(false);
+    const errorMessage = ref('');
 
     const handleSignup = async () => {
+      if (loading.value) return;
+
       loading.value = true;
       errorMessage.value = '';
 
-      if (role.value === 'admin' && secretPasskey.value !== 'Shadowaxe') {
-        errorMessage.value = 'Invalid secret passkey for admin signup.';
-        loading.value = false;
-        return;
-      }
-
       try {
-        console.log("Signup data:", {
-          email: email.value,
-          password: password.value, // Ensure password is logged
-        });
+        // Create user using Firebase Authentication
+        const auth = getAuth();
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email.value,
+          password.value
+        );
+        const user = userCredential.user;
 
-        const user = await authService.signup(email.value, password.value, {
+        // Determine user role and set data in Firestore
+        const userData = {
           firstName: firstName.value,
           lastName: lastName.value,
+          email: email.value,
           phoneNumber: phoneNumber.value,
           location: location.value,
-          birthday: birthday.value,
           gender: gender.value,
+          birthday: birthday.value,
           role: role.value,
-        });
+        };
 
-        router.push('/dashboard');
+        if (role.value === 'admin') {
+          if (secretPasskey.value !== 'Shadowaxe') {
+            throw new Error('Invalid passkey for admin role');
+          }
+          userData.secretPasskey = secretPasskey.value;
+        }
+
+        await setDoc(doc(db, role.value === 'admin' ? 'admins' : 'users', user.uid), userData);
+        router.push(role.value === 'admin' ? '/admin-login' : '/login');
       } catch (error) {
-        console.error("Signup error:", error);
-        errorMessage.value = error.message || 'An error occurred during signup.';
+        errorMessage.value = error.message;
       } finally {
         loading.value = false;
       }
@@ -150,19 +160,20 @@ export default {
       lastName,
       email,
       phoneNumber,
-      password,
       location,
-      birthday,
+      password,
       gender,
+      birthday,
       role,
       secretPasskey,
-      errorMessage,
       loading,
+      errorMessage,
       handleSignup,
     };
   },
 };
 </script>
+
 
 <style scoped>
 .signup-page {

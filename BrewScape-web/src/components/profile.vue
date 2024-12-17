@@ -5,23 +5,27 @@
       <div class="nav-links">
         <button class="nav-btn" @click="goToCart">Cart</button>
         <button class="nav-btn" @click="goToDashboard">Dashboard</button>
-        <button class="nav-btn logout" @click="logout">Back</button>
+        <button class="nav-btn logout" @click="goToDashboard">Back</button>
       </div>
     </nav>
+
+    <!-- Notification Section -->
+    <div v-if="showNotification" class="notification">
+      <p>{{ notificationMessage }}</p>
+    </div>
+
     <div class="dashboard-content">
       <div class="personal-info" v-if="user">
         <div class="profile-container">
           <h2 style="text-align: center;">Personal Information</h2>
           <div class="image-container">
-            <!-- Use a placeholder image or any image URL stored in Firestore -->
             <img :src="profilePicture" alt="Profile Image" class="profile-image" />
-            <!-- You can add an upload button here later if needed -->
           </div>
           <div class="info-details">
             <p class="info-item"><strong><span class="highlight">Name:</span></strong> {{ user.name }}</p>
             <p class="info-item"><strong><span class="highlight">Email Address:</span></strong> {{ user.email }}</p>
             <p class="info-item"><strong><span class="highlight">Location:</span></strong> {{ user.location }}</p>
-            <p class="info-item"><strong><span class="highlight">Contract Number:</span></strong> {{ user.contractNumber }}</p>
+            <p class="info-item"><strong><span class="highlight">Contact Number:</span></strong> {{ user.contractNumber }}</p>
             <div class="info-item-container">
               <div class="info-item-birthday">
                 <strong><span class="highlight">Birthday:</span></strong> {{ user.birthday }}
@@ -36,11 +40,13 @@
           </div>
         </div>
       </div>
+
       <!-- Loading state -->
       <div v-else class="loading">
         <p>Loading user profile...</p>
       </div>
 
+      <!-- Purchase History Section -->
       <div class="purchase-history-section">
         <h2 class="history-title">Purchase History</h2>
         <div class="purchase-history">
@@ -60,22 +66,6 @@
                   <div class="history-column">{{ formatDate(order.date) }}</div>
                 </div>
                 <div class="order-total">Total: ₱{{ order.total.toFixed(2) }}</div>
-                <div class="payment-method">
-                  Payment Method: {{ order.paymentMethod }}
-                  <div v-if="order.paymentDetails" class="payment-details">
-                    <template v-if="order.paymentMethod === 'Cash on Delivery'">
-                      <div>Full Name: {{ order.paymentDetails.fullName }}</div>
-                      <div>Delivery Address: {{ order.paymentDetails.address }}</div>
-                      <div>Contact Number: {{ order.paymentDetails.contactNumber }}</div>
-                    </template>
-                    <template v-else-if="order.paymentMethod === 'Gcash'">
-                      <div>Full Name: {{ order.paymentDetails.fullName }}</div>
-                      <div>Delivery Address: {{ order.paymentDetails.address }}</div>
-                      <div>GCash Number: {{ order.paymentDetails.accountNumber }}</div>
-                    </template>
-                  </div>
-                </div>
-                <div class="row-divider"></div>
               </div>
             </div>
             <div v-else class="no-history">
@@ -94,26 +84,26 @@
         <form @submit.prevent="updateProfile">
           <label>Name:</label>
           <input type="text" v-model="editedUser.name" required />
-          
+
           <label>Email Address:</label>
           <input type="email" v-model="editedUser.email" required />
-          
+
           <label>Location:</label>
           <input type="text" v-model="editedUser.location" required />
-          
-          <label>Contract Number:</label>
+
+          <label>Contact Number:</label>
           <input type="tel" v-model="editedUser.contractNumber" @input="filterInput" placeholder="Enter your contact number" required />
-          
+
           <label>Birthday:</label>
           <input type="date" v-model="editedUser.birthday" required />
-          
+
           <label>Gender:</label>
           <select v-model="editedUser.gender" required>
             <option value="Male">Male</option>
             <option value="Female">Female</option>
             <option value="Other">Other</option>
           </select>
-          
+
           <button type="submit">Save Changes</button>
         </form>
       </div>
@@ -123,7 +113,7 @@
 
 <script>
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, query, collection, where, getDocs } from "firebase/firestore";
 import NavbarComponent from './NavbarComponent.vue';
 import authService from '../services/authService';
 
@@ -133,7 +123,7 @@ export default {
   },
   data() {
     return {
-      profilePicture: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png', // Placeholder image
+      profilePicture: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
       isEditProfileModalOpen: false,
       user: null,
       editedUser: {
@@ -144,57 +134,65 @@ export default {
         birthday: '',
         gender: ''
       },
-      orderHistory: [],
+      orderHistory: [], // Stores fetched purchase history
       showNotification: false,
       notificationMessage: '',
-      notificationTimeout: null
     };
   },
-
   created() {
     this.loadUserProfile();
-    this.loadOrderHistory();
+    this.loadOrderHistory(); // Fetch purchase history when the component is created
   },
-
   methods: {
     async loadUserProfile() {
       const currentUser = authService.getCurrentUser();
-      if (!currentUser || !currentUser.email) {
-        console.warn('No authenticated user found');
-        return;
-      }
+      if (!currentUser || !currentUser.email) return;
+
       const docRef = doc(getFirestore(), 'users', currentUser.email);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
         this.user = docSnap.data();
         this.profilePicture = this.user.profilePicture || this.profilePicture;
-      } else {
-        console.warn('No profile found for user:', currentUser.email);
-        this.user = this.getEmptyProfile();
       }
     },
 
-    async updateProfile() {
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser || !currentUser.email) {
-        this.showNotificationMessage('Error: User not found');
-        return;
-      }
-
+    async loadOrderHistory() {
       try {
-        await setDoc(doc(getFirestore(), 'users', currentUser.email), this.editedUser);
-        this.user = { ...this.editedUser };
-        this.closeEditProfileModal();
-        this.showNotificationMessage('Profile updated successfully!');
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || !currentUser.email) return;
+
+        const ordersRef = collection(getFirestore(), 'orders');
+        const q = query(ordersRef, where("userEmail", "==", currentUser.email));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          this.orderHistory = [];
+          console.log("No orders found for this user");
+        } else {
+          this.orderHistory = querySnapshot.docs.map((doc) => {
+            const orderData = doc.data();
+            return {
+              ...orderData,
+              date: orderData.date.toMillis(), // Convert Firestore timestamp to milliseconds
+              total: orderData.items.reduce((sum, item) => sum + item.price * item.quantity, 0), // Calculate total
+            };
+          });
+          console.log("Orders loaded:", this.orderHistory); // Debugging line
+        }
       } catch (error) {
-        console.error('Error updating profile: ', error);
-        this.showNotificationMessage('Error updating profile');
+        console.error("Error loading purchase history:", error);
+        this.showNotification = true;
+        this.notificationMessage = "Error loading purchase history. Please try again later.";
       }
+    },
+
+    formatDate(timestamp) {
+      const date = new Date(timestamp);
+      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
     },
 
     openEditProfileModal() {
-      this.editedUser = { ...this.user };
       this.isEditProfileModalOpen = true;
     },
 
@@ -202,58 +200,30 @@ export default {
       this.isEditProfileModalOpen = false;
     },
 
-    showNotificationMessage(message) {
-      this.notificationMessage = message;
-      this.showNotification = true;
-      if (this.notificationTimeout) clearTimeout(this.notificationTimeout);
-      this.notificationTimeout = setTimeout(() => {
-        this.showNotification = false;
-      }, 3000);
-    },
-
-    formatDate(dateString) {
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    },
-
-    loadOrderHistory() {
-      // Load the user's order history from Firestore if needed
-      this.orderHistory = []; // Implement the order loading logic
+    updateProfile() {
+      // Update profile logic
     },
 
     filterInput(event) {
-      const input = event.target;
-      const pattern = /[^0-9]/g;
-      input.value = input.value.replace(pattern, '');
-    },
-
-    getEmptyProfile() {
-      return {
-        name: '',
-        email: '',
-        location: '',
-        contractNumber: '',
-        birthday: '',
-        gender: ''
-      };
+      const value = event.target.value.replace(/[^0-9]/g, '');
+      event.target.value = value;
     },
 
     logout() {
-      authService.logout();
-      this.$router.push('/login');
+      authService.logout(); // Assuming there's a method for logging out
+      this.$router.push('/login'); // Navigate to login page
     },
-
+    
     goToCart() {
       this.$router.push('/cart');
     },
 
     goToDashboard() {
       this.$router.push('/dashboard');
-    }
-  }
+    },
+  },
 };
 </script>
-
 
 
 

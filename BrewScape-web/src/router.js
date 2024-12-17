@@ -9,6 +9,8 @@ import AdminDashboard from "./components/AdminDashboard.vue";
 import OwnerLogin from './components/owner-login.vue';
 import OwnerDashboard from '@/components/ownerDashboard.vue';
 import authService from '@/services/authService';
+import { db } from "./firebase.config";  // Assuming Firebase is initialized here
+import { doc, getDoc } from "firebase/firestore";
 
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -48,7 +50,6 @@ const routes = [
     path: "/owner-dashboard",
     name: "OwnerDashboard",
     component: OwnerDashboard,
-    meta: { requiresAuth: true, role: "owner" },
   },
   {
     path: "/dashboard",
@@ -79,7 +80,7 @@ router.beforeEach(async (to, from, next) => {
   const isAuthenticated = authService.isAuthenticated();
   const user = isAuthenticated ? await authService.getUserProfile() : null;
 
-  // Avoiding unnecessary redirects
+  // Avoid unnecessary redirects
   if (to.path === from.path) {
     return next(); // Prevent navigating to the same route
   }
@@ -89,9 +90,26 @@ router.beforeEach(async (to, from, next) => {
     return next('/login'); // Redirect to login if not authenticated
   }
 
-  // Role-based redirection
+  // Admin login flow
+  if (to.path === '/admin-login') {
+    if (isAuthenticated) {
+      // Check if the authenticated user is an admin
+      const docRef = doc(db, 'admins', user.email);  // Assuming email is the document ID for admin users
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists() && docSnap.data().role === 'admin') {
+        return next(); // Allow access to the admin login page if the user is an admin
+      } else {
+        return next('/login'); // Redirect to regular login if the user is not an admin
+      }
+    } else {
+      return next(); // Allow access to the admin login page if not authenticated
+    }
+  }
+
+  // Role-based redirection for authenticated users
   if (to.meta.role && user && user.role !== to.meta.role) {
-    // Ensure the user is redirected to their appropriate dashboard if role mismatches
+    // Redirect to the appropriate dashboard based on the user's role
     if (user.role === "admin") {
       return next('/admin-dashboard');
     }

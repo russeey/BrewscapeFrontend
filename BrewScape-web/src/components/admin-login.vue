@@ -28,9 +28,9 @@
         <div class="check-box-div">
           <a href="#">Forgot Password?</a>
         </div>
-          <button type="submit" :disabled="loading || isLockedOut">
-            Sign In as Administrator
-          </button>
+        <button type="submit" :disabled="loading || isLockedOut">
+          Sign In as Administrator
+        </button>
       </form>
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
       <p v-if="isLockedOut" class="error">
@@ -50,6 +50,9 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase.config';
 
 export default {
   name: 'AdminLoginPage',
@@ -64,23 +67,30 @@ export default {
     const countdown = ref(0);
     let countdownTimer = null;
 
-    const validAdminEmail = 'admin@example.com';
-    const validAdminPassword = 'admin123';
-
     const loginAdmin = async () => {
       if (isLockedOut.value) return;
-      
+
       loading.value = true;
       errorMessage.value = '';
-        
+
       try {
-        if (email.value === validAdminEmail && password.value === validAdminPassword) {
-          // Set adminId in localStorage for authentication
-          localStorage.setItem('adminId', 'admin'); // You can set a more secure identifier
-          router.push('/admin-dashboard'); // Redirect to admin dashboard
-        } else {
-          throw new Error('Invalid credentials');
+        // Sign in using Firebase Authentication
+        const auth = getAuth();
+        const userCredential = await signInWithEmailAndPassword(auth, email.value, password.value);
+        const user = userCredential.user;
+
+        // Query Firestore for the user to check if they are an admin
+        const adminRef = collection(db, 'admins');
+        const q = query(adminRef, where('email', '==', email.value));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          throw new Error('No admin account found.');
         }
+
+        // Redirect to the Admin Dashboard
+        localStorage.setItem('adminId', user.uid); // Store admin's UID for session tracking
+        router.push('/admin-dashboard'); // Redirect to admin dashboard
       } catch (error) {
         handleLoginError(error);
       } finally {
@@ -90,15 +100,15 @@ export default {
 
     const handleLoginError = (error) => {
       loginAttempts.value++;
-      
+
       if (loginAttempts.value >= 3) {
         isLockedOut.value = true;
         startCountdown();
       }
-      
-      errorMessage.value = error.message === 'Invalid credentials' 
-        ? 'Invalid administrator credentials' 
-        : 'An error occurred during administrator login';
+
+      errorMessage.value = error.message === 'Invalid credentials'
+        ? 'Invalid administrator credentials'
+        : error.message;
     };
 
     const startCountdown = () => {
@@ -126,11 +136,12 @@ export default {
       isLockedOut,
       countdown,
       loginAdmin,
-      handleLoginError
     };
-  }
+  },
 };
 </script>
+
+
 
 <style scoped>
 .login-page {

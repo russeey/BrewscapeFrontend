@@ -1,13 +1,13 @@
 <template>
   <div v-if="isAuthenticated" class="dashboard">
     <header class="header">
-  <div class="logo">
-    <h1>BrewScape</h1>
-  </div>
-  <button class="cart-button" @click="goToCart">Cart</button>
-  <button class="profile-button" @click="goToProfile">Profile</button>
-  <button class="logout-button" @click="confirmLogout">Logout</button>
-</header>
+      <div class="logo">
+        <h1>BrewScape</h1>
+      </div>
+      <button class="cart-button" @click="goToCart">Cart</button>
+      <button class="profile-button" @click="goToProfile">Profile</button>
+      <button class="logout-button" @click="confirmLogout">Logout</button>
+    </header>
 
     <div class="search-bar">
       <input 
@@ -29,21 +29,21 @@
     </section>
 
     <section class="promo second-promo">
-  <div class="promo-content">
-    <h2>{{ secondPromoMessage }}</h2>
-  </div>
-  <div class="promo-image">
-    <img src="@/assets/promotion.png"/>
-  </div>
-</section>
+      <div class="promo-content">
+        <h2>{{ secondPromoMessage }}</h2>
+      </div>
+      <div class="promo-image">
+        <img src="@/assets/promotion.png"/>
+      </div>
+    </section>
 
-<section class="menu-section">
-  <div class="shop-info">
-    <div class="shop-details">
-      <p><span class="label">Shop Name:</span> Kape Barato</p>
-      <p><span class="label">Shop Location:</span> Pabayo-Chaves Street, Cagayan de Oro City</p>
-      <p><span class="label">Contact:</span> 09*********</p>
-    </div>
+    <section class="menu-section">
+      <div class="shop-info">
+        <div class="shop-details">
+          <p><span class="label">Shop Name:</span> Kape Barato</p>
+          <p><span class="label">Shop Location:</span> Pabayo-Chaves Street, Cagayan de Oro City</p>
+          <p><span class="label">Contact:</span> 09*********</p>
+        </div>
 
         <div class="shop-rating">
           <p>
@@ -93,9 +93,10 @@
 
     <!-- Footer Section -->
     <footer class="footer">
-
     </footer>
   </div>
+
+  <!-- If not authenticated -->
   <div v-else>
     <h1>You are not authorized to view this page.</h1>
     <router-link to="/login">Go to Login</router-link>
@@ -104,11 +105,15 @@
 
 <script>
 import authService from "@/authService";
+import { getAuth } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '@/firebase.config';
 
 export default {
   data() {
     return {
       isAuthenticated: false,
+      userRole: '', // To store the user's role
       searchTerm: '',
       coffeeMenu: [
         { name: 'Iced Cappuccino', price: 120 },
@@ -136,6 +141,8 @@ export default {
     if (!this.isAuthenticated) {
       this.$router.push("/login");
     } else {
+      // Check user's role
+      this.checkUserRole();
       // Load the rating from localStorage if it exists
       const savedRating = localStorage.getItem('brewscapeRating');
       if (savedRating) {
@@ -143,32 +150,48 @@ export default {
       }
     }
   },
-  computed: {
-    filteredCoffeeMenu() {
-      return this.coffeeMenu.filter(item => 
-        item.name.toLowerCase().includes(this.searchTerm.toLowerCase())
-      );
-    },
-    filteredPastriesMenu() {
-      return this.pastriesMenu.filter(item => 
-        item.name.toLowerCase().includes(this.searchTerm.toLowerCase())
-      );
-    }
-  },
   methods: {
-  goToProfile() {
-    this.$router.push("/profile");
-  },
-  goToCart() {
-    this.$router.push("/cart");
-  },
-  setRating(rating) {
+    async checkUserRole() {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+        // Check user's role in Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const adminDocRef = doc(db, "admins", user.uid);
+
+        try {
+          const userSnapshot = await getDoc(userDocRef);
+          const adminSnapshot = await getDoc(adminDocRef);
+
+          if (adminSnapshot.exists()) {
+            // User is an admin
+            this.userRole = 'admin';
+            this.$router.push("/admin-dashboard");
+          } else if (userSnapshot.exists()) {
+            // User is a regular user
+            this.userRole = 'user';
+          } else {
+            // Invalid user, log out and redirect to login
+            this.logout();
+          }
+        } catch (error) {
+          console.error("Error checking user role:", error);
+          this.logout();
+        }
+      }
+    },
+    goToProfile() {
+      this.$router.push("/profile");
+    },
+    goToCart() {
+      this.$router.push("/cart");
+    },
+    setRating(rating) {
       this.currentRating = rating;
       localStorage.setItem('brewscapeRating', rating);
     },
     confirmLogout() {
-      console.log('Logout button clicked');
-      console.log('Confirm logout method called');
       if (confirm('Are you sure you want to log out?')) {
         this.logout();
       }
@@ -178,7 +201,7 @@ export default {
       localStorage.removeItem("userProfile");
       localStorage.removeItem("cartItems");
       localStorage.removeItem("brewscapeRating");
-      this.$router.push("/");
+      this.$router.push("/login");
     },
     isHighlighted(itemName) {
       return itemName.toLowerCase().includes(this.searchTerm.toLowerCase());
@@ -186,6 +209,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
   /* General Layout */

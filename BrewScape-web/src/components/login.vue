@@ -9,12 +9,12 @@
       </div>
     </header>
     <div class="form-container">
-      <h2>Sign in or Create an account</h2>
+      <h2>Sign in</h2>
       <form @submit.prevent="loginUser">
         <input
           type="email"
           v-model="email"
-          placeholder="Email or Phone Number"
+          placeholder="Email"
           required
           :disabled="isLockedOut"
         />
@@ -25,25 +25,28 @@
           required
           :disabled="isLockedOut"
         />
-        <div class="check-box-div">
-          <a href="#">Forgot Password?</a>
+        
+        <div class="role-selection">
+          <label>Select Role</label>
+          <select v-model="role" required>
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+            <option value="owner">Owner</option>
+          </select>
         </div>
-        <button type="submit" :disabled="loading || isLockedOut">
-          Sign In
-        </button>
+
+        <button type="submit" :disabled="loading || isLockedOut">Sign In</button>
       </form>
+
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
       <p v-if="isLockedOut" class="error">
         Please wait {{ countdown }} seconds before trying again.
       </p>
+
       <div class="login-section">
-        <p>
-          JOIN US AND EXPLORE LOCAL COFFEE SHOP HERE<br /><span>IN CDO</span>
-        </p>
+        <p>JOIN US AND EXPLORE LOCAL COFFEE SHOPS IN CDO</p>
         <router-link to="/signup" class="join-now-btn">Join now</router-link>
       </div>
-      <p class="admin-link" @click="loginAsAdmin">Sign in as coffee shop administrator</p>
-      <p class="admin-link" @click="loginAsOwner">Sign in as Coffee Shop Owner</p>
     </div>
   </div>
 </template>
@@ -51,7 +54,9 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import authService from '../services/authService';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase.config';
 
 export default {
   name: 'LoginPage',
@@ -59,6 +64,7 @@ export default {
     const router = useRouter();
     const email = ref('');
     const password = ref('');
+    const role = ref('user'); // default role
     const loading = ref(false);
     const errorMessage = ref('');
     const loginAttempts = ref(0);
@@ -73,23 +79,38 @@ export default {
       errorMessage.value = '';
 
       try {
-        // Call the signIn method from authService
-        const user = await authService.signIn(email.value, password.value);
+        // Firebase authentication
+        const auth = getAuth();
+        const userCredential = await signInWithEmailAndPassword(auth, email.value, password.value);
+        const user = userCredential.user;
 
-        // Fetch user profile after login to get role
-        const profile = await authService.getUserProfile();
-        user.role = profile?.role; // Assuming `role` is part of user data in Firestore
-
-        // Redirect to the appropriate dashboard based on role
-        if (user.role === 'admin') {
-          router.push('/admin-dashboard');
-        } else if (user.role === 'owner') {
-          router.push('/owner-dashboard');
+        // Query Firestore based on selected role
+        let userRoleRef;
+        if (role.value === 'admin') {
+          userRoleRef = collection(db, 'admins');
+        } else if (role.value === 'owner') {
+          userRoleRef = collection(db, 'owners');
         } else {
-          router.push('/dashboard');
+          userRoleRef = collection(db, 'users');
         }
 
-        // Reset login attempts after a successful login
+        const q = query(userRoleRef, where('email', '==', email.value));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          throw new Error('No account found with the given email for this role.');
+        }
+
+        // Redirect to corresponding dashboard based on role
+        if (role.value === 'admin') {
+          router.push('/admin-dashboard');
+        } else if (role.value === 'owner') {
+          router.push('/owner-dashboard');
+        } else {
+          router.push('/user-dashboard');
+        }
+
+        // Reset login attempts after successful login
         loginAttempts.value = 0;
       } catch (error) {
         handleLoginError(error);
@@ -106,10 +127,9 @@ export default {
         startCountdown();
       }
 
-      // Replace Firebase error with a generic message
-      errorMessage.value = error.code === 'auth/invalid-credential' 
-        ? 'Incorrect Username or Password' 
-        : 'An error occurred during login';
+      errorMessage.value = error.message === 'Invalid credentials'
+        ? 'Incorrect email or password'
+        : error.message;
     };
 
     const startCountdown = () => {
@@ -127,35 +147,21 @@ export default {
       isLockedOut.value = false;
       loginAttempts.value = 0;
       countdown.value = 0;
-      errorMessage.value = ''; // Clear error message after lockout resets
-    };
-
-    const loginAsAdmin = () => {
-      if (isLockedOut.value) return;
-      router.push('/admin-login');
-    };
-
-    const loginAsOwner = () => {
-      if (isLockedOut.value) return;
-      router.push('/owner-login');
     };
 
     return {
       email,
       password,
+      role,
       loading,
       errorMessage,
       isLockedOut,
       countdown,
       loginUser,
-      handleLoginError,
-      loginAsAdmin,
-      loginAsOwner
     };
-  }
+  },
 };
 </script>
-
 
 
 
