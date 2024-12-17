@@ -1,6 +1,7 @@
 <template>
   <div v-if="isAuthenticated" class="ownerDashboard">
-    <h1>Welcome to the Owner Dashboard</h1>
+    <!-- Log Out Button -->
+    <button class="logout-btn" @click="logOut">Log Out</button>
 
     <!-- Dashboard Summary Section -->
     <div class="dashboard-summary">
@@ -16,7 +17,6 @@
 
     <!-- Order Management Section -->
     <h2>Manage Orders</h2>
-
     <table class="inventory-table">
       <thead>
         <tr>
@@ -51,6 +51,30 @@
       </tbody>
     </table>
 
+    <!-- Transaction History Section -->
+    <h2>User Transaction History</h2>
+    <div v-for="(userOrders, user) in userTransactionHistory" :key="user">
+      <h3>{{ user }}</h3>
+      <table class="transaction-history-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Order Date</th>
+            <th>Total Amount</th>
+            <th>Payment Method</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="order in userOrders" :key="order.id">
+            <td>{{ order.id }}</td>
+            <td>{{ order.date }}</td>
+            <td>₱{{ order.totalAmount }}</td>
+            <td>{{ order.paymentMethod }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <!-- Add/Edit Order Modal -->
     <div v-if="showModal" class="modal">
       <div class="modal-content">
@@ -78,18 +102,21 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';  // Import signOut from Firebase
+import { useRouter } from 'vue-router';  // Import vue-router's useRouter function
 import { db, collection, query, where, getDocs } from '../firebase.config'; // Firebase imports
 
 export default {
   name: 'OwnerDashboard',
   setup() {
+    const router = useRouter();  // Initialize Vue Router
     const isAuthenticated = ref(false);
     const orders = ref([]);  // Array to store fetched orders
     const totalSales = ref(0); // Dynamic total sales
     const showModal = ref(false);
     const editMode = ref(false);
     const formOrder = reactive({ id: null, itemName: '', quantity: '', status: '' });
+    const userTransactionHistory = ref({}); // Store user transaction history
 
     onMounted(async () => {
       // Get current authenticated user
@@ -114,11 +141,33 @@ export default {
 
           // Calculate total sales from orders
           totalSales.value = orders.value.reduce((sum, order) => sum + order.totalAmount, 0);
+
+          // Organize orders by user for transaction history
+          const history = {};
+          orders.value.forEach(order => {
+            if (!history[order.user]) {
+              history[order.user] = [];
+            }
+            history[order.user].push(order);
+          });
+          userTransactionHistory.value = history;
         } else {
           isAuthenticated.value = false;
         }
       }
     });
+
+    const logOut = () => {
+      const auth = getAuth();
+      signOut(auth)
+        .then(() => {
+          isAuthenticated.value = false;  // Update authentication status
+          router.push('/');  // Redirect to the login page
+        })
+        .catch((error) => {
+          console.error("Error signing out: ", error);
+        });
+    };
 
     const openAddOrderModal = () => {
       editMode.value = false;
@@ -165,15 +214,28 @@ export default {
       saveOrder,
       deleteOrder,
       closeModal,
+      userTransactionHistory,  // Bind the user transaction history
+      logOut,  // Log out function
     };
   },
 };
 </script>
 
-
 <style scoped>
 .ownerDashboard {
   padding: 20px;
+  background-color: #ffffff; /* Light brown color */
+}
+
+.logout-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: #4b2d1f;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .dashboard-summary {
@@ -184,7 +246,7 @@ export default {
 
 .card {
   padding: 15px;
-  background-color: #f9f9f9;
+  background-color: #f8e2c2;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
@@ -195,38 +257,33 @@ export default {
   margin-bottom: 5px;
 }
 
-.inventory-table {
+.inventory-table, .transaction-history-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
 }
 
-.inventory-table th,
-.inventory-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
+.inventory-table th, .transaction-history-table th {
   text-align: left;
+  padding: 8px;
+  background-color: #f8e2c2;
 }
 
-.inventory-table th {
-  background-color: #f4f4f4;
+.inventory-table td, .transaction-history-table td {
+  padding: 8px;
 }
 
-button {
+.edit-btn, .delete-btn {
+  background-color: #007bff;
+  color: white;
   padding: 5px 10px;
-  border: none;
+  margin-right: 10px;
   border-radius: 4px;
   cursor: pointer;
 }
 
-.edit-btn {
-  background-color: #007bff;
-  color: #fff;
-}
-
 .delete-btn {
   background-color: #dc3545;
-  color: #fff;
 }
 
 .modal {
@@ -235,17 +292,44 @@ button {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .modal-content {
-  background: #fff;
+  background-color: white;
   padding: 20px;
   border-radius: 8px;
   width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+form label {
+  margin-bottom: 5px;
+}
+
+form input {
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+form button {
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #4b2d1f;
+  color: white;
+  cursor: pointer;
+}
+
+form button[type="button"] {
+  background-color: #ccc;
 }
 </style>

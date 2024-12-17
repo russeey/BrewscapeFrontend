@@ -107,7 +107,7 @@ export default {
         } else if (role.value === 'owner') {
           router.push('/owner-dashboard');
         } else {
-          router.push('/user-dashboard');
+          router.push('/dashboard');
         }
 
         // Reset login attempts after successful login
